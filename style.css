@@ -330,3 +330,304 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+/* 错误相关样式 */
+.error-container {
+    background: #fff5f5;
+    border: 2px solid #fed7d7;
+    border-radius: 12px;
+    padding: 30px;
+    margin: 20px 0;
+}
+
+.error-header {
+    border-bottom: 1px solid #fed7d7;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+}
+
+.error-header h2 {
+    color: #c53030;
+    margin-bottom: 10px;
+}
+
+.error-message {
+    color: #742a2a;
+    font-size: 1.1em;
+    line-height: 1.6;
+}
+
+.error-details {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #e2e8f0;
+}
+
+.error-details h4 {
+    color: #4a5568;
+    margin-bottom: 10px;
+}
+
+.error-pre {
+    background: #2d3748;
+    color: #e2e8f0;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.troubleshooting {
+    background: #ebf8ff;
+    border-left: 4px solid #4299e1;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 0 8px 8px 0;
+}
+
+.troubleshooting h4 {
+    color: #2c5282;
+    margin-bottom: 10px;
+}
+
+.troubleshooting ul {
+    margin-left: 20px;
+    color: #4a5568;
+}
+
+.troubleshooting li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.troubleshooting code {
+    background: #edf2f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #2d3748;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-retry {
+    background: #4299e1;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-retry:hover {
+    background: #3182ce;
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+    border: 1px solid #cbd5e0;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+/* 文件检查样式 */
+.file-check {
+    background: #f7fafc;
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+}
+
+.file-check h3 {
+    color: #4a5568;
+    margin-bottom: 15px;
+}
+
+#fileCheckResult {
+    margin: 25px 0;
+    min-height: 100px;
+    text-align: left;
+}
+
+.check-success, .check-failure, .check-error {
+    padding: 20px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.check-success {
+    background: #f0fff4;
+    border: 1px solid #9ae6b4;
+    color: #276749;
+}
+
+.check-failure {
+    background: #fff5f5;
+    border: 1px solid #fc8181;
+    color: #c53030;
+}
+
+.check-error {
+    background: #feebc8;
+    border: 1px solid #fbd38d;
+    color: #c05621;
+}
+
+.check-success pre, .check-failure pre, .check-error pre {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 12px;
+    overflow-x: auto;
+}
+
+/* 简单错误样式 */
+.simple-error {
+    background: #fff5f5;
+    border: 1px solid #fc8181;
+    border-radius: 8px;
+    padding: 20px;
+    color: #c53030;
+    text-align: center;
+}
+
+.simple-error h3 {
+    margin-bottom: 10px;
+}
+
+
+/* CSV语言切换器样式 */
+.csv-language-switcher {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 25px;
+    padding: 10px 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(52, 152, 219, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+
+.csv-language-switcher:hover {
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.csv-lang-label {
+    font-size: 16px;
+    color: #3498db;
+    font-weight: 600;
+}
+
+.csv-lang-buttons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.csv-lang-btn {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.3s ease;
+    min-width: 60px;
+    text-align: center;
+}
+
+.csv-lang-btn:hover {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+}
+
+.csv-lang-btn.active {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.csv-lang-separator {
+    color: #e0e0e0;
+    user-select: none;
+    padding: 0 5px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .csv-language-switcher {
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        border-radius: 20px;
+    }
+    
+    .csv-lang-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+        min-width: 50px;
+    }
+    
+    .csv-lang-label {
+        font-size: 14px;
+    }
+}
+
+/* 加载状态指示器 */
+.language-loading {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.language-loading .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}

@@ -1,71 +1,77 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数据可视化工具 - 基于Pyodide</title>
-    <!-- 加载Pyodide -->
+    <!-- 动态设置meta描述 -->
+    <meta name="description" data-i18n="appDescription">
+    <title data-i18n="appTitle">Tree-Structured Data Visualization Tool</title>
+    
+    <!-- Pyodide -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    
+    <!-- 样式 -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- CSV语言管理器 -->
+    <script src="js/csv-language-manager.js"></script>
 </head>
 <body>
+    <!-- 语言切换器会由JS动态插入到这里 -->
+    
     <div class="container">
         <header>
-            <h1>📊 数据可视化工具</h1>
-            <p>上传CSV文件，使用Python在浏览器中生成可视化图表</p>
+            <h1 data-i18n="appTitle">Tree-Structured Data Visualization Tool</h1>
+            <p data-i18n="appDescription">Upload CSV file to generate visualizations in your browser</p>
         </header>
 
+        <!-- 所有需要翻译的元素都添加 data-i18n 属性 -->
         <div class="upload-section">
             <div class="upload-area" id="uploadArea">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14,2 14,8 20,8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10,9 9,9 8,9"></polyline>
-                </svg>
-                <h3>拖放文件到此处或点击选择</h3>
-                <p>支持CSV格式文件，第一行应为列标题</p>
-                <input type="file" id="fileInput" accept=".csv" hidden>
-                <button type="button" id="selectFileBtn" class="btn-primary">选择文件</button>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                <h3 data-i18n="uploadArea.title">Drag and drop file here or click to select</h3>
+                <p data-i18n="uploadArea.description">Supports CSV format file with the first row as column headers</p>
+                <button type="button" id="selectFileBtn" class="btn-primary" data-i18n="uploadArea.button">
+                    Select File
+                </button>
             </div>
             
             <div class="file-info" id="fileInfo" style="display: none;">
-                <h4>已选择文件：<span id="fileName"></span></h4>
+                <h4><span data-i18n="ui.fileSelected">File selected:</span><span id="fileName"></span></h4>
                 <div id="filePreview"></div>
             </div>
         </div>
 
         <div class="controls-section">
             <div class="control-group">
-                <label for="chartType">图表类型：</label>
+                <label for="chartType" data-i18n="controls.chartType">Chart Type:</label>
                 <select id="chartType">
-                    <option value="treemap">矩形树图 (Treemap)</option>
-                    <option value="bar">柱状图</option>
-                    <option value="line">折线图</option>
+                    <option value="treemap" data-i18n="controls.chartTypes.treemap">Treemap</option>
+                    <option value="bar" data-i18n="controls.chartTypes.bar">Bar Chart</option>
+                    <option value="line" data-i18n="controls.chartTypes.line">Line Chart</option>
                 </select>
             </div>
             
             <div class="control-group">
-                <label for="sizeColumn">数值列：</label>
+                <label for="sizeColumn" data-i18n="controls.sizeColumn">Value Column:</label>
                 <select id="sizeColumn">
-                    <option value="">请先上传文件</option>
+                    <option value="" data-i18n="controls.noFile">Please upload a file first</option>
                 </select>
             </div>
             
             <div class="control-group">
-                <label for="labelColumn">标签列：</label>
+                <label for="labelColumn" data-i18n="controls.labelColumn">Label Column:</label>
                 <select id="labelColumn">
-                    <option value="">请先上传文件</option>
+                    <option value="" data-i18n="controls.noFile">Please upload a file first</option>
                 </select>
             </div>
         </div>
 
         <div class="action-section">
             <button id="processBtn" class="btn-process" disabled>
-                <span class="btn-text">🚀 生成可视化图表</span>
+                <span class="btn-text" data-i18n="ui.generateVisualization">Generate Visualization</span>
                 <span class="btn-loading" style="display: none;">
-                    <span class="spinner"></span> 处理中...
+                    <span class="spinner"></span> <span data-i18n="ui.processing"></span>Processing...</span>
                 </span>
             </button>
         </div>
@@ -73,12 +79,12 @@
         <div id="loading" class="loading" style="display: none;">
             <div class="loading-content">
                 <div class="spinner"></div>
-                <h3>正在初始化Python环境...</h3>
-                <p>首次加载需要下载Python运行时，这可能需要一些时间</p>
+                <h3 data-i18n="ui.initializingPython">Initializing Python Environment...</h3>
+                <p data-i18n="ui.pythonDownloadInfo">First load requires downloading Python runtime, this may take some time</p>
                 <div class="progress">
                     <div class="progress-bar" id="progressBar"></div>
                 </div>
-                <p class="progress-text" id="progressText">准备中...</p>
+                <p class="progress-text" id="progressText" data-i18n="ui.preparing">Preparing...</p>
             </div>
         </div>
 
@@ -87,11 +93,66 @@
         </div>
 
         <footer>
-            <p>Powered by Pyodide - Python在浏览器中运行</p>
+            <p data-i18n="footer">Powered by Pyodide - Python running in your browser</p>
         </footer>
+
     </div>
 
-    <!-- 加载JavaScript -->
+    <!-- 主脚本 -->
     <script src="script.js"></script>
+    
+    <script>
+        // 初始化流程
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Page loaded, starting initialization...');
+            
+            // 显示加载状态
+            showLanguageLoading();
+            
+            // 初始化CSV语言管理器
+            await csvLanguageManager.init();
+            
+            // 隐藏加载状态
+            hideLanguageLoading();
+            
+            // 初始化主应用
+            initializeApp();
+        });
+        
+        function showLanguageLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'language-loading';
+            loadingDiv.innerHTML = `
+                <div class="spinner"></div>
+                <span data-i18n="ui.loading">Loading languages...</span>
+            `;
+            loadingDiv.id = 'languageLoading';
+            document.body.appendChild(loadingDiv);
+        }
+        
+        function hideLanguageLoading() {
+            const loadingDiv = document.getElementById('languageLoading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+        
+        function initializeApp() {
+            // 原有的应用初始化代码
+            if (typeof setupFileHandlers === 'function') {
+                setupFileHandlers();
+            }
+            
+            if (typeof initializePyodide === 'function') {
+                initializePyodide();
+            }
+            
+            // 绑定语言切换事件，动态更新内容
+            window.addEventListener('languageChanged', function(event) {
+                console.log('Language changed, updating dynamic content...');
+                // 这里可以更新动态生成的内容
+            });
+        }
+    </script>
 </body>
 </html>

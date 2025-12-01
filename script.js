@@ -100,21 +100,35 @@ function setupFileHandlers() {
 
 async function handleFileSelect(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        console.log('没有选择文件');
+        return;
+    }
 
     // 验证文件类型
     if (!file.name.toLowerCase().endsWith('.csv')) {
-        alert('请选择CSV格式的文件');
+        alert('Please select a CSV format file');
         return;
     }
 
     try {
+        console.log('处理文件:', file.name);
+        
         // 显示文件信息
-        document.getElementById('fileName').textContent = file.name;
-        document.getElementById('fileInfo').style.display = 'block';
+        const fileNameElement = document.getElementById('fileName');
+        const fileInfoElement = document.getElementById('fileInfo');
+        
+        if (fileNameElement) {
+            fileNameElement.textContent = file.name;
+        }
+        
+        if (fileInfoElement) {
+            fileInfoElement.style.display = 'block';
+        }
 
         // 读取文件内容
-        fileContent = await readFileAsText(file);
+        const fileContent = await readFileAsText(file);
+        console.log('文件读取成功，大小:', fileContent.length, '字符');
         
         // 显示文件预览
         await showFilePreview(fileContent);
@@ -124,7 +138,7 @@ async function handleFileSelect(event) {
 
     } catch (error) {
         console.error('文件读取失败:', error);
-        alert('文件读取失败，请重试');
+        alert('File reading failed, please try again');
     }
 }
 
@@ -154,63 +168,91 @@ function showFilePreview(csvContent) {
         <table class="preview-table">
             ${previewHtml}
         </table>
-        ${lines.length >= 6 ? '<p style="margin-top: 10px; color: #666;">仅显示前6行...</p>' : ''}
+        ${lines.length >= 5 ? '<p style="margin-top: 10px; color: #666;" data-i18n="ui.showingTopRows">Showing top 5 rows...</p>' : ''}
     `;
 }
 
 function updateColumnSelectors(csvContent) {
-    const lines = csvContent.split('\n');
-    if (lines.length === 0) return;
-
-    const headers = lines[0].split(',').map(h => h.trim());
+    console.log('更新列选择器...');
     
     const sizeColumn = document.getElementById('sizeColumn');
     const labelColumn = document.getElementById('labelColumn');
+    
+    // 安全检查
+    if (!sizeColumn || !labelColumn) {
+        console.error('列选择器元素未找到:', {
+            sizeColumn: !!sizeColumn,
+            labelColumn: !!labelColumn
+        });
+        return;
+    }
+    
+    const lines = csvContent.split('\n');
+    if (lines.length === 0) {
+        console.warn('CSV内容为空');
+        return;
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim());
+    
+    console.log('检测到的列标题:', headers);
     
     // 清空现有选项
     sizeColumn.innerHTML = '';
     labelColumn.innerHTML = '';
     
-    // 添加新选项
+    // 添加"请选择"选项
+    const pleaseSelectOption = '<option value="">Please select...</option>';
+    sizeColumn.innerHTML = pleaseSelectOption;
+    labelColumn.innerHTML = pleaseSelectOption;
+    
+    // 添加列选项
     headers.forEach(header => {
-        const option1 = new Option(header, header);
-        const option2 = new Option(header, header);
-        sizeColumn.add(option1);
-        labelColumn.add(option2);
+        if (header && header.trim() !== '') {
+            const option1 = document.createElement('option');
+            option1.value = header;
+            option1.textContent = header;
+            sizeColumn.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = header;
+            option2.textContent = header;
+            labelColumn.appendChild(option2);
+        }
     });
     
     // 设置默认选择
     if (headers.length >= 2) {
-        sizeColumn.value = headers[1]; // 假设第二列是数值
-        labelColumn.value = headers[0]; // 假设第一列是标签
+        sizeColumn.value = headers[1];
+        labelColumn.value = headers[0];
     }
+    
+    console.log('列选择器更新完成');
 }
 
 // 主要处理函数
 async function processData() {
     if (!isPyodideReady || !fileContent) {
-        alert('请等待Python环境初始化完成并选择文件');
+        showError('请等待Python环境初始化完成并选择文件');
         return;
     }
 
     const processBtn = document.getElementById('processBtn');
-    const btnText = processBtn.querySelector('.btn-text');
-    const btnLoading = processBtn.querySelector('.btn-loading');
     const output = document.getElementById('output');
 
     // 显示加载状态
-    processBtn.disabled = true;
-    btnText.style.display = 'none';
-    btnLoading.style.display = 'inline';
-
-    // 获取用户选择的参数
-    const chartType = document.getElementById('chartType').value;
-    const sizeColumn = document.getElementById('sizeColumn').value;
-    const labelColumn = document.getElementById('labelColumn').value;
+    setButtonLoading(processBtn, true);
+    output.innerHTML = ''; // 清空之前的输出
 
     try {
-        // 准备Python代码
-        const pythonCode = preparePythonCode(fileContent, chartType, sizeColumn, labelColumn);
+        // 获取用户选择的参数
+        const chartType = document.getElementById('chartType').value;
+        const sizeColumn = document.getElementById('sizeColumn').value;
+        const labelColumn = document.getElementById('labelColumn').value;
+
+        // 准备Python代码（现在会读取python/main.py）
+        console.log('正在加载Python主文件...');
+        const pythonCode = await preparePythonCode(fileContent, chartType, sizeColumn, labelColumn);
         
         // 在Pyodide中执行Python代码
         console.log('开始执行Python代码...');
@@ -222,219 +264,371 @@ async function processData() {
         const endTime = performance.now();
         console.log(`Python代码执行完成，耗时: ${(endTime - startTime).toFixed(2)}ms`);
 
-        // 显示结果
-        displayResults(result);
+        // 显示结果或错误
+        if (result.success) {
+            displayResults(result);
+        } else {
+            displayError(result);
+        }
 
     } catch (error) {
         console.error('处理失败:', error);
-        output.innerHTML = `
-            <div class="error-message">
-                <h3>❌ 处理失败</h3>
-                <p>错误信息: ${error.message}</p>
-                <p>请检查文件格式和参数设置，然后重试。</p>
-            </div>
-        `;
+        showError(`处理过程发生错误: ${error.message}`);
     } finally {
         // 恢复按钮状态
-        processBtn.disabled = false;
-        btnText.style.display = 'inline';
-        btnLoading.style.display = 'none';
+        setButtonLoading(processBtn, false);
     }
 }
 
-function preparePythonCode(csvContent, chartType, sizeColumn, labelColumn) {
-    // 转义CSV内容中的特殊字符
-    const escapedCsvContent = csvContent.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+// 新的辅助函数：显示错误
+function displayError(errorInfo) {
+    const output = document.getElementById('output');
+    
+    let detailsHtml = '';
+    if (errorInfo.details) {
+        detailsHtml = `
+            <div class="error-details">
+                <h4>详细错误信息：</h4>
+                <pre class="error-pre">${escapeHtml(errorInfo.details)}</pre>
+            </div>
+        `;
+    }
+    
+    let troubleshootingHtml = '';
+    if (errorInfo.type === 'FileLoadError') {
+        troubleshootingHtml = `
+            <div class="troubleshooting">
+                <h4>故障排除建议：</h4>
+                <ul>
+                    <li>检查 <code>python/main.py</code> 文件是否存在</li>
+                    <li>确认文件路径正确（相对于网站根目录）</li>
+                    <li>确保文件已正确上传到GitHub仓库</li>
+                    <li>检查浏览器控制台的网络选项卡查看文件加载状态</li>
+                </ul>
+            </div>
+        `;
+    } else if (errorInfo.type === 'ImportError') {
+        troubleshootingHtml = `
+            <div class="troubleshooting">
+                <h4>故障排除建议：</h4>
+                <ul>
+                    <li>检查 <code>python/main.py</code> 是否正确定义了 <code>process_csv_data</code> 函数</li>
+                    <li>确认函数名称拼写正确</li>
+                    <li>确保函数有正确的参数签名：<code>process_csv_data(csv_content, chart_type, size_column, label_column)</code></li>
+                </ul>
+            </div>
+        `;
+    }
+    
+    output.innerHTML = `
+        <div class="error-container">
+            <div class="error-header">
+                <h2>❌ ${errorInfo.error || '处理失败'}</h2>
+                <p class="error-message">${errorInfo.message || '未知错误'}</p>
+            </div>
+            
+            ${detailsHtml}
+            ${troubleshootingHtml}
+            
+            <div class="error-actions">
+                <button onclick="location.reload()" class="btn-retry">🔄 刷新页面重试</button>
+                <button onclick="showFileCheck()" class="btn-secondary">📁 检查文件状态</button>
+            </div>
+        </div>
+    `;
+}
 
-    return `
-import pandas as pd
-import matplotlib.pyplot as plt
-import squarify
-import base64
+// 显示文件检查界面
+function showFileCheck() {
+    const output = document.getElementById('output');
+    
+    output.innerHTML = `
+        <div class="file-check">
+            <h3>📁 文件状态检查</h3>
+            <p>正在检查 <code>python/main.py</code> 文件状态...</p>
+            <div id="fileCheckResult"></div>
+            <button onclick="performFileCheck()" class="btn-primary">开始检查</button>
+        </div>
+    `;
+    
+    // 延迟执行检查，让UI先更新
+    setTimeout(performFileCheck, 100);
+}
+
+// 执行文件检查
+async function performFileCheck() {
+    const resultDiv = document.getElementById('fileCheckResult');
+    
+    try {
+        resultDiv.innerHTML = '<p>正在检查文件...</p>';
+        
+        // 尝试加载文件
+        const response = await fetch('python/main.py');
+        
+        if (response.ok) {
+            const content = await response.text();
+            const fileSize = new Blob([content]).size;
+            
+            resultDiv.innerHTML = `
+                <div class="check-success">
+                    <p data-i18n="ui.fileSelected">✅ File loaded successfully! </p>
+                    <ul>
+                        <li>HTTP状态码: ${response.status} ${response.statusText}</li>
+                        <li>文件大小: ${fileSize} 字节</li>
+                        <li>内容预览: <pre>${escapeHtml(content.substring(0, 200))}...</pre></li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="check-failure">
+                    <p>❌ 文件加载失败</p>
+                    <ul>
+                        <li>HTTP状态码: ${response.status} ${response.statusText}</li>
+                        <li>可能原因: 
+                            <ul>
+                                <li>文件不存在于服务器</li>
+                                <li>路径不正确</li>
+                                <li>服务器配置问题</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="check-error">
+                <p>⚠️ 检查过程中发生错误</p>
+                <p><strong>错误信息:</strong> ${error.message}</p>
+                <p>请检查浏览器控制台获取更多信息。</p>
+            </div>
+        `;
+    }
+}
+
+// 辅助函数：设置按钮加载状态
+function setButtonLoading(button, isLoading) {
+    const btnText = button.querySelector('.btn-text');
+    const btnLoading = button.querySelector('.btn-loading');
+    
+    button.disabled = isLoading;
+    if (btnText) btnText.style.display = isLoading ? 'none' : 'inline';
+    if (btnLoading) btnLoading.style.display = isLoading ? 'inline' : 'none';
+}
+
+// 辅助函数：显示简单错误
+function showError(message) {
+    const output = document.getElementById('output');
+    output.innerHTML = `
+        <div class="simple-error">
+            <h3>❌ 错误</h3>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+// 辅助函数：HTML转义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+
+// preparePythonCode 函数 
+async function preparePythonCode(csvContent, chartType, sizeColumn, labelColumn) {
+    try {
+        // 1. 尝试加载 python/main.py 文件内容
+        const response = await fetch('python/main.py');
+        if (!response.ok) {
+            throw new Error(`无法加载Python主文件: HTTP ${response.status} ${response.statusText}`);
+        }
+        
+        const pythonMainCode = await response.text();
+        
+        // 2. 验证文件内容是否为空或无效
+        if (!pythonMainCode || pythonMainCode.trim().length === 0) {
+            throw new Error('Python主文件内容为空');
+        }
+        
+        // 3. 检查文件是否包含必要的函数
+        if (!pythonMainCode.includes('def process_csv_data')) {
+            console.warn('Python主文件中未找到 process_csv_data 函数');
+            // 这里可以继续执行，因为函数可能在主文件中以其他方式定义
+        }
+        
+        // 4. 转义CSV内容中的特殊字符
+        const escapedCsvContent = csvContent
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r');
+        
+        // 5. 创建包装代码，调用 main.py 中的函数
+        return `
+# =========== 加载外部Python主文件 ===========
+${pythonMainCode}
+
+# =========== 主执行逻辑 ===========
 import json
-from io import StringIO, BytesIO
-import numpy as np
+import traceback
+import sys
 
 try:
-    # 设置matplotlib中文字体（如果需要）
-    plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial']
-    plt.rcParams['axes.unicode_minus'] = False
+    # 检查是否成功导入了必要的函数
+    if 'process_csv_data' not in locals() and 'process_csv_data' not in globals():
+        # 尝试从可能的模块中导入
+        try:
+            from __main__ import process_csv_data
+        except ImportError:
+            # 尝试动态查找函数
+            for name, obj in globals().items():
+                if callable(obj) and name == 'process_csv_data':
+                    process_csv_data = obj
+                    break
+            else:
+                raise ImportError("未找到 process_csv_data 函数")
     
-    # 读取CSV数据
-    csv_data = """${escapedCsvContent}"""
-    df = pd.read_csv(StringIO(csv_data))
+    print("✓ Python主文件加载成功")
+    print(f"✓ 图表类型: {chartType}")
+    print(f"✓ 数值列: {sizeColumn}")
+    print(f"✓ 标签列: {labelColumn}")
     
-    # 数据清洗：移除空值
-    df = df.dropna()
+    # 调用处理函数
+    csv_content = """${escapedCsvContent}"""
+    chart_type = """${chartType}"""
+    size_column = """${sizeColumn}""" if """${sizeColumn}""" else None
+    label_column = """${labelColumn}""" if """${labelColumn}""" else None
     
-    # 确保数值列是数字类型
-    df['${sizeColumn}'] = pd.to_numeric(df['${sizeColumn}'], errors='coerce')
-    df = df.dropna(subset=['${sizeColumn}'])
+    print("开始处理CSV数据...")
+    result = process_csv_data(csv_content, chart_type, size_column, label_column)
     
-    print(f"处理数据: {len(df)} 行, {len(df.columns)} 列")
-    print("列名:", list(df.columns))
+    # 确保返回的是字典
+    if not isinstance(result, dict):
+        raise TypeError(f"process_csv_data 应返回字典，但返回了 {type(result)}")
     
-    # 创建图表
-    plt.figure(figsize=(12, 8))
+    print("✓ 数据处理完成")
+    json.dumps(result)
     
-    if '${chartType}' == 'treemap':
-        # 生成矩形树图
-        if len(df) > 0:
-            # 准备数据
-            sizes = df['${sizeColumn}'].values
-            labels = df['${labelColumn}'].astype(str).values
-            
-            # 如果数据太多，只取前50个
-            if len(sizes) > 50:
-                sizes = sizes[:50]
-                labels = labels[:50]
-                print("数据量较大，只显示前50个项目")
-            
-            # 创建颜色映射
-            colors = plt.cm.viridis(np.linspace(0, 1, len(sizes)))
-            
-            # 绘制矩形树图
-            squarify.plot(sizes=sizes, label=labels, color=colors, alpha=0.7)
-            plt.title('矩形树图 - ${labelColumn} vs ${sizeColumn}', fontsize=16, pad=20)
-            plt.axis('off')
-            
-        else:
-            raise Exception("没有有效数据可生成图表")
-            
-    elif '${chartType}' == 'bar':
-        # 生成柱状图
-        if len(df) > 0:
-            # 如果数据太多，只取前20个
-            display_df = df.head(20) if len(df) > 20 else df
-            
-            plt.bar(display_df['${labelColumn}'].astype(str), display_df['${sizeColumn}'])
-            plt.title('柱状图 - ${labelColumn} vs ${sizeColumn}', fontsize=16)
-            plt.xlabel('${labelColumn}')
-            plt.ylabel('${sizeColumn}')
-            plt.xticks(rotation=45, ha='right')
-            plt.tight_layout()
-            
-        else:
-            raise Exception("没有有效数据可生成图表")
-            
-    elif '${chartType}' == 'line':
-        # 生成折线图
-        if len(df) > 0:
-            # 尝试将标签列转换为数值（如果是时间序列）
-            try:
-                x_data = pd.to_numeric(df['${labelColumn}'])
-            except:
-                x_data = range(len(df))
-            
-            plt.plot(x_data, df['${sizeColumn}'], 'o-', linewidth=2, markersize=4)
-            plt.title('折线图 - ${labelColumn} vs ${sizeColumn}', fontsize=16)
-            plt.xlabel('${labelColumn}')
-            plt.ylabel('${sizeColumn}')
-            plt.grid(True, alpha=0.3)
-            plt.tight_layout()
-            
-        else:
-            raise Exception("没有有效数据可生成图表")
-    
-    # 将图表转换为base64图片
-    buf = BytesIO()
-    plt.savefig(buf, format='png', dpi=100, bbox_inches='tight', facecolor='white')
-    buf.seek(0)
-    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    buf.close()
-    plt.close()
-    
-    # 计算统计信息
-    stats = {
-        'total_rows': len(df),
-        'total_columns': len(df.columns),
-        'column_names': df.columns.tolist(),
-        'size_column_stats': {
-            'mean': float(df['${sizeColumn}'].mean()),
-            'median': float(df['${sizeColumn}'].median()),
-            'min': float(df['${sizeColumn}'].min()),
-            'max': float(df['${sizeColumn}'].max()),
-            'sum': float(df['${sizeColumn}'].sum())
-        }
+except ImportError as e:
+    error_msg = f"导入错误: {str(e)}\\n请确保python/main.py中定义了process_csv_data函数"
+    error_result = {
+        'success': False,
+        'error': 'Python函数未定义',
+        'message': error_msg,
+        'details': str(e),
+        'type': 'ImportError'
     }
-    
-    # 返回结果
-    result = {
-        'success': True,
-        'image': img_base64,
-        'stats': stats,
-        'message': f"成功处理 {len(df)} 行数据"
-    }
+    json.dumps(error_result)
     
 except Exception as e:
-    result = {
+    # 获取完整的错误追踪信息
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    traceback_details = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    
+    error_result = {
         'success': False,
-        'error': str(e),
-        'message': f"处理失败: {str(e)}"
+        'error': 'Python执行错误',
+        'message': f"Python代码执行失败: {str(e)}",
+        'details': ''.join(traceback_details),
+        'type': exc_type.__name__
     }
-
-json.dumps(result)
+    json.dumps(error_result)
 `;
+        
+    } catch (error) {
+        // 不再提供备选方案，直接抛出错误
+        console.error('加载python/main.py失败:', error);
+        
+        // 创建一个特殊的错误返回，而不是内联代码
+        const errorResult = {
+            success: false,
+            error: '文件加载失败',
+            message: `无法加载Python主文件: ${error.message}`,
+            details: '请确保python/main.py文件存在且可访问',
+            type: 'FileLoadError'
+        };
+        
+        // 直接返回一个会立即报错的Python代码
+        return `
+import json
+
+error_result = ${JSON.stringify(errorResult)}
+json.dumps(error_result)
+`;
+    }
 }
+
 
 function displayResults(result) {
     const output = document.getElementById('output');
     
     if (result.success) {
+        // 获取当前语言的翻译
+        const currentTranslations = csvLanguageManager ? csvLanguageManager.getCurrentTranslations() : {};
+        
+        // 辅助函数：安全获取翻译
+        const t = (key) => {
+            const value = key.split('.').reduce((obj, i) => obj && obj[i], currentTranslations);
+            return value || key;
+        };
+        
+        // 创建下载按钮的HTML（使用base64数据）
+        const downloadButtonHTML = `
+            <button id="downloadImageBtn" class="btn-download" 
+                    onclick="downloadChartImage('${result.image}', '${result.stats.total_rows}_rows_chart.png')">
+                📥 ${t('actions.download') || 'Download Image'}
+            </button>
+        `;
+        
         output.innerHTML = `
             <div class="results">
-                <h2>🎉 处理完成！</h2>
+                <h2>${t('results.success')}</h2>
                 <p class="success-message">${result.message}</p>
                 
                 <div class="stats">
                     <div class="stat-card">
                         <h3>${result.stats.total_rows}</h3>
-                        <p>数据行数</p>
+                        <p>${t('results.dataRows')}</p>
                     </div>
                     <div class="stat-card">
                         <h3>${result.stats.total_columns}</h3>
-                        <p>数据列数</p>
+                        <p>${t('results.dataColumns')}</p>
                     </div>
                     <div class="stat-card">
                         <h3>${result.stats.size_column_stats.mean.toFixed(2)}</h3>
-                        <p>平均值</p>
+                        <p>${t('results.average')}</p>
                     </div>
                     <div class="stat-card">
                         <h3>${result.stats.size_column_stats.sum.toFixed(2)}</h3>
-                        <p>总和</p>
+                        <p>${t('results.total')}</p>
                     </div>
                 </div>
                 
                 <div class="chart-container">
-                    <h3>📈 生成的可视化图表</h3>
-                    <img src="data:image/png;base64,${result.image}" alt="生成的可视化图表">
+                    <div class="chart-header">
+                        <h3>${t('results.visualization')}</h3>
+                        ${downloadButtonHTML}
+                    </div>
+                    <img src="data:image/png;base64,${result.image}" 
+                         alt="${t('results.visualization')}"
+                         id="generatedChart">
                 </div>
                 
                 <div class="data-stats">
-                    <h3>📊 数值列统计详情</h3>
+                    <h3>${t('results.statsDetails')}</h3>
                     <div class="stats-details">
-                        <p><strong>最小值:</strong> ${result.stats.size_column_stats.min.toFixed(2)}</p>
-                        <p><strong>最大值:</strong> ${result.stats.size_column_stats.max.toFixed(2)}</p>
-                        <p><strong>中位数:</strong> ${result.stats.size_column_stats.median.toFixed(2)}</p>
+                        <p><strong>${t('results.min')}</strong> ${result.stats.size_column_stats.min.toFixed(2)}</p>
+                        <p><strong>${t('results.max')}</strong> ${result.stats.size_column_stats.max.toFixed(2)}</p>
+                        <p><strong>${t('results.median')}</strong> ${result.stats.size_column_stats.median.toFixed(2)}</p>
                     </div>
                 </div>
             </div>
         `;
     } else {
-        output.innerHTML = `
-            <div class="error-message">
-                <h3>❌ 处理失败</h3>
-                <p><strong>错误信息:</strong> ${result.error}</p>
-                <p><strong>详细信息:</strong> ${result.message}</p>
-                <p>请检查：</p>
-                <ul>
-                    <li>文件格式是否正确（应为CSV格式）</li>
-                    <li>选择的列名是否存在</li>
-                    <li>数值列是否包含有效的数字</li>
-                    <li>数据是否包含空值</li>
-                </ul>
-            </div>
-        `;
+        // 错误处理保持不变
+        output.innerHTML = createErrorDisplay(result);
     }
 }
 
@@ -456,3 +650,36 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('error', function(e) {
     console.error('全局错误:', e.error);
 });
+
+
+// 在页面加载时检查Python文件状态
+async function checkPythonFileStatus() {
+    try {
+        console.log('检查Python文件状态...');
+        const response = await fetch('python/main.py');
+        
+        if (response.ok) {
+            console.log('✅ python/main.py 文件可访问');
+            return true;
+        } else {
+            console.warn(`⚠️ python/main.py 文件访问失败: HTTP ${response.status}`);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ 检查Python文件状态时出错:', error);
+        return false;
+    }
+}
+
+// 在Pyodide初始化完成后检查
+async function initializePyodide() {
+    // ... 原有初始化代码 ...
+    
+    // 在初始化完成后检查文件状态
+    const isFileAccessible = await checkPythonFileStatus();
+    if (!isFileAccessible) {
+        console.warn('Python文件可能无法访问，应用功能可能受限');
+    }
+    
+    // ... 继续原有初始化 ...
+}

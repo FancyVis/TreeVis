@@ -1,0 +1,43 @@
+key,zh-CN,en-US,es-ES,ja-JP
+appTitle,树状数据可视化工具,Tree-Structured Data Visualization Tool,Herramienta de Visualización de Datos Estructurados en Árbol,ツリー構造データ可視化ツール
+appDescription,上传CSV文件并生成可视化图表,Upload CSV file to generate visualizations in your browser,Sube archivos CSV para generar visualizaciones en tu navegador,CSVファイルをアップロードして、ブラウザでPythonを使用して視覚化を生成します
+uploadArea.title,拖放文件到此处或点击选择,Drag & drop file here or click to select,Arrastra y suelta archivos aquí o haz clic para seleccionar,ここにファイルをドラッグ＆ドロップするか、クリックして選択してください
+uploadArea.description,支持CSV格式文件（第一行应为列标题）,Supports CSV format file with the first row as column headers,Admite archivos en formato CSV con la primera fila como encabezados de columna,CSV形式のファイルをサポート、最初の行は列見出しである必要があります
+uploadArea.button,选择文件,Select File,Seleccionar Archivo,ファイルを選択
+controls.chartType,图表类型：,Chart Type:,Tipo de Gráfico:,グラフの種類：
+controls.chartTypes.treemap,矩形树图,Treemap,Mapa de Árbol,ツリーマップ
+controls.chartTypes.bar,柱状图,Bar Chart,Gráfico de Barras,棒グラフ
+controls.chartTypes.line,折线图,Line Chart,Gráfico de Líneas,折れ線グラフ
+controls.sizeColumn,数值列：,Value Column:,Columna de Valores:,数値列：
+controls.labelColumn,标签列：,Label Column:,Columna de Etiquetas:,ラベル列：
+controls.noFile,请先上传文件,Please upload a file first,Por favor sube un archivo primero,まずファイルをアップロードしてください
+actions.generate,🚀 生成可视化图表,🚀 Generate Visualization,🚀 Generar Visualización,🚀 視覚化を生成
+actions.processing,处理中...,Processing...,Procesando...,処理中...
+loading.title,正在初始化Python环境...,Initializing Python Environment...,Inicializando Entorno Python...,Python環境を初期化中...
+loading.description,首次加载需要下载Python运行时，这可能需要一些时间,First load requires downloading Python runtime, this may take some time,La primera carga requiere descargar el tiempo de ejecución de Python, esto puede tomar algo de tiempo,初回の読み込みではPythonランタイムのダウンロードが必要です。これには時間がかかる場合があります
+loading.progress,准备中...,Preparing...,Preparando...,準備中...
+results.success,🎉 处理完成！,🎉 Processing Complete!,🎉 ¡Procesamiento Completado!,🎉 処理完了！
+results.dataRows,数据行数,Data Rows,Filas de Datos,データ行数
+results.dataColumns,数据列数,Data Columns,Columnas de Datos,データ列数
+results.average,平均值,Average,Promedio,平均
+results.total,总和,Total,Total,合計
+results.visualization,📈 生成的可视化图表,📈 Generated Visualization,📈 Visualización Generada,📈 生成された視覚化グラフ
+results.statsDetails,📊 数值列统计详情,📊 Value Column Statistics,📊 Estadísticas de Columna de Valores,📊 数値列統計の詳細
+results.min,最小值：,Min:,Mín:,最小：
+results.max,最大值：,Max:,Máx:,最大：
+results.median,中位数：,Median:,Mediana:,中央値：
+errors.noFile,请等待Python环境初始化完成并选择文件,Please wait for Python environment to initialize and select a file,Espera a que se inicialice el entorno de Python y selecciona un archivo,Python環境の初期化が完了し、ファイルを選択するまでお待ちください
+errors.processingFailed,处理失败：,Processing failed:,Procesamiento falló:,処理に失敗しました：
+errors.retry,🔄 刷新页面重试,🔄 Refresh Page to Retry,🔄 Actualizar Página para Reintentar,🔄 ページを更新して再試行
+footer,Powered by Pyodide - Python在浏览器中运行,Powered by Pyodide - Python running in your browser,Desarrollado por Pyodide - Python ejecutándose en tu navegador,Powered by Pyodide - ブラウザで実行されるPython
+ui.fileSelected,已选择文件：,File selected:,Archivo seleccionado:,選択されたファイル：
+ui.loading,正在加载语言...,Loading languages...,Cargando idiomas...,言語を読み込み中...
+ui.generateVisualization,生成可视化图表,Generate Visualization,Generar Visualización,視覚化を生成
+ui.processing,处理中...,Processing...,Procesando...,処理中...
+ui.initializingPython,正在初始化Python环境...,Initializing Python Environment...,Inicializando Entorno Python...,Python環境を初期化中...
+ui.pythonDownloadInfo,首次加载需要下载Python运行时可能需要一些时间,First load requires downloading Python runtime which may take some time,La primera carga requiere descargar el tiempo de ejecución de Python esto puede tomar algo de tiempo,初回の読み込みではPythonランタイムのダウンロードが必要です。これには時間がかかる場合があります
+ui.preparing,准备中...,Preparing...,Preparando...,準備中...
+ui.showingTopRows,仅显示前5行...,Showing top 5 rows...,Mostrando las primeras 5 filas...,上位5行を表示しています...
+ui.downloadImage,下载图像,Download Image,Descargar Imagen,画像をダウンロード
+ui.fileSelected,✅ 文件加载成功！ ,✅ File loaded successfully! ,✅ ¡Archivo cargado con éxito! ,✅ ファイルが正常に読み込まれました！ 
+footer,由Pyodide提供支持 - 在您的浏览器中运行的Python,Powered by Pyodide - Python running in your browser,Desarrollado por Pyodide - Python ejecutándose en tu navegador,Powered by Pyodide - ブラウザで実行されるPython
