@@ -1,158 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 动态设置meta描述 -->
-    <meta name="description" data-i18n="appDescription">
-    <title data-i18n="appTitle">Tree-Structured Data Visualization Tool</title>
-    
-    <!-- Pyodide -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
-    
-    <!-- 样式 -->
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- CSV语言管理器 -->
-    <script src="js/csv-language-manager.js"></script>
+  <meta charset="UTF-8" />
+  <title>Tree Data Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Pyodide: replace version with the one you want from the official docs if needed -->
+  <script
+    src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"
+  ></script>
+
+  <script src="script.js" defer></script>
 </head>
 <body>
-    <!-- 语言切换器会由JS动态插入到这里 -->
-    
-    <div class="container">
-        <header>
-            <h1 data-i18n="appTitle">Tree-Structured Data Visualization Tool</h1>
-            <p data-i18n="appDescription">Upload CSV file to generate visualizations in your browser</p>
-        </header>
+  <header class="top-bar">
+    <h1 data-i18n-key="app_title">Tree Data Visualizer</h1>
+    <button id="lang-toggle" class="lang-toggle" data-i18n-key="lang_toggle">
+      中文 / EN
+    </button>
+  </header>
 
-        <!-- 所有需要翻译的元素都添加 data-i18n 属性 -->
-        <div class="upload-section">
-            <div class="upload-area" id="uploadArea">
-                <input type="file" id="fileInput" accept=".csv" style="display: none;">
-                <h3 data-i18n="uploadArea.title">Drag and drop file here or click to select</h3>
-                <p data-i18n="uploadArea.description">Supports CSV format file with the first row as column headers</p>
-                <button type="button" id="selectFileBtn" class="btn-primary" data-i18n="uploadArea.button">
-                    Select File
-                </button>
-            </div>
-            
-            <div class="file-info" id="fileInfo" style="display: none;">
-                <h4><span data-i18n="ui.fileSelected">File selected:</span><span id="fileName"></span></h4>
-                <div id="filePreview"></div>
-            </div>
+  <main class="container">
+    <section class="panel">
+      <h2 data-i18n-key="data_section_title">1. Upload & Preview Data</h2>
+
+      <div class="form-row">
+        <label for="file-input">
+          <span data-i18n-key="upload_label">Upload CSV file</span>
+        </label>
+        <input type="file" id="file-input" accept=".csv" />
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <h3 data-i18n-key="preview_title">Preview</h3>
+      <div id="preview" class="preview-table"></div>
+    </section>
+
+    <section class="panel">
+        <h2 data-i18n-key="chart_section_title">2. Configure Chart</h2>
+
+        <div class="form-row">
+            <label for="label-column">
+            <span data-i18n-key="choose_label_column">Label column</span>
+            </label>
+            <select id="label-column"></select>
         </div>
 
-        <div class="controls-section">
-            <div class="control-group">
-                <label for="chartType" data-i18n="controls.chartType">Chart Type:</label>
-                <select id="chartType">
-                    <option value="treemap" data-i18n="controls.chartTypes.treemap">Treemap</option>
-                    <option value="bar" data-i18n="controls.chartTypes.bar">Bar Chart</option>
-                    <option value="line" data-i18n="controls.chartTypes.line">Line Chart</option>
-                </select>
-            </div>
-            
-            <div class="control-group">
-                <label for="sizeColumn" data-i18n="controls.sizeColumn">Value Column:</label>
-                <select id="sizeColumn">
-                    <option value="" data-i18n="controls.noFile">Please upload a file first</option>
-                </select>
-            </div>
-            
-            <div class="control-group">
-                <label for="labelColumn" data-i18n="controls.labelColumn">Label Column:</label>
-                <select id="labelColumn">
-                    <option value="" data-i18n="controls.noFile">Please upload a file first</option>
-                </select>
-            </div>
+        <div class="form-row">
+            <label for="value-column">
+            <span data-i18n-key="choose_value_column">Value column</span>
+            </label>
+            <select id="value-column"></select>
         </div>
 
-        <div class="action-section">
-            <button id="processBtn" class="btn-process" disabled>
-                <span class="btn-text" data-i18n="ui.generateVisualization">Generate Visualization</span>
-                <span class="btn-loading" style="display: none;">
-                    <span class="spinner"></span> <span data-i18n="ui.processing"></span>Processing...</span>
-                </span>
-            </button>
+        <!-- Color column selector -->
+        <div class="form-row">
+            <label for="color-column">
+            <span data-i18n-key="choose_color_column">Color column (optional)</span>
+            </label>
+            <select id="color-column">
+            <option value="" data-i18n-key="color_none_option">
+                Default colors
+            </option>
+            </select>
         </div>
 
-        <div id="loading" class="loading" style="display: none;">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <h3 data-i18n="ui.initializingPython">Initializing Python Environment...</h3>
-                <p data-i18n="ui.pythonDownloadInfo">First load requires downloading Python runtime, this may take some time</p>
-                <div class="progress">
-                    <div class="progress-bar" id="progressBar"></div>
-                </div>
-                <p class="progress-text" id="progressText" data-i18n="ui.preparing">Preparing...</p>
-            </div>
+        <div class="form-row">
+            <label for="color-mode">
+                <span data-i18n-key="color_mapping_mode">Color mapping</span>
+            </label>
+            <select id="color-mode">
+                <option value="direct" data-i18n-key="color_mode_direct">
+                Use values as colors
+                </option>
+                <option value="numeric" data-i18n-key="color_mode_numeric">
+                Numeric → gradient
+                </option>
+                <option value="binary" data-i18n-key="color_mode_binary">
+                Boolean / binary
+                </option>
+            </select>
         </div>
 
-        <div id="output" class="output-section">
-            <!-- 结果将在这里显示 -->
+        <div class="form-row">
+            <label for="base-color">
+                <span data-i18n-key="base_color_label">Base color</span>
+            </label>
+            <input type="color" id="base-color" value="#ffd700" />
         </div>
 
-        <footer>
-            <p data-i18n="footer">Powered by Pyodide - Python running in your browser</p>
-        </footer>
+        <div class="form-row">
+            <label for="chart-type">
+            <span data-i18n-key="chart_type">Chart type</span>
+            </label>
+            <select id="chart-type">
+            <option value="bar" data-i18n-key="chart_type_bar">Bar chart</option>
+            <option value="treemap" data-i18n-key="chart_type_treemap">
+                Treemap
+            </option>
+            </select>
+        </div>
 
-    </div>
+        <button id="generate-chart" class="primary-button" disabled
+            data-i18n-key="generate_button">
+            Generate chart
+        </button>
+    </section>
 
-    <!-- 主脚本 -->
-    <script src="script.js"></script>
-    
-    <script>
-        // 初始化流程
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Page loaded, starting initialization...');
-            
-            // 显示加载状态
-            showLanguageLoading();
-            
-            // 初始化CSV语言管理器
-            await csvLanguageManager.init();
-            
-            // 隐藏加载状态
-            hideLanguageLoading();
-            
-            // 初始化主应用
-            initializeApp();
-        });
-        
-        function showLanguageLoading() {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'language-loading';
-            loadingDiv.innerHTML = `
-                <div class="spinner"></div>
-                <span data-i18n="ui.loading">Loading languages...</span>
-            `;
-            loadingDiv.id = 'languageLoading';
-            document.body.appendChild(loadingDiv);
-        }
-        
-        function hideLanguageLoading() {
-            const loadingDiv = document.getElementById('languageLoading');
-            if (loadingDiv) {
-                loadingDiv.remove();
-            }
-        }
-        
-        function initializeApp() {
-            // 原有的应用初始化代码
-            if (typeof setupFileHandlers === 'function') {
-                setupFileHandlers();
-            }
-            
-            if (typeof initializePyodide === 'function') {
-                initializePyodide();
-            }
-            
-            // 绑定语言切换事件，动态更新内容
-            window.addEventListener('languageChanged', function(event) {
-                console.log('Language changed, updating dynamic content...');
-                // 这里可以更新动态生成的内容
-            });
-        }
-    </script>
+
+    <section class="panel">
+      <h2 data-i18n-key="result_section_title">3. Result</h2>
+      <div id="chart-container" class="chart-container">
+        <img id="chart-image" alt="Chart will appear here" />
+      </div>
+      <button id="download-chart" class="secondary-button" disabled
+        data-i18n-key="download_button">
+        Download chart
+      </button>
+    </section>
+  </main>
 </body>
 </html>
