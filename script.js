@@ -1,36 +1,59 @@
 // --- Global state ---
-let pyodideReadyPromise = null;
-let translations = {};
-let currentLang = "en";
-let currentCsvLoaded = false;
-let currentChartDataUrl = null;
+const state = {
+  pyodideReadyPromise: null,
+  translations: {},
+  currentLang: "en",
+  currentCsvLoaded: false,
+  currentChartDataUrl: null,
+};
+
+const dom = {};
+
+function cacheDom() {
+  dom.status = document.getElementById("status");
+  dom.fileInput = document.getElementById("file-input");
+  dom.generateChart = document.getElementById("generate-chart");
+  dom.downloadChart = document.getElementById("download-chart");
+  dom.langToggle = document.getElementById("lang-toggle");
+  dom.labelColumn = document.getElementById("label-column");
+  dom.valueColumn = document.getElementById("value-column");
+  dom.colorColumn = document.getElementById("color-column");
+  dom.chartType = document.getElementById("chart-type");
+  dom.colorMode = document.getElementById("color-mode");
+  dom.baseColor = document.getElementById("base-color");
+  dom.chartImage = document.getElementById("chart-image");
+  dom.preview = document.getElementById("preview");
+}
+
+function setStatus(messageKey, fallback) {
+  if (dom.status) {
+    dom.status.textContent = getI18n(messageKey, fallback);
+  }
+}
 
 // --- Initialization ---
 document.addEventListener("DOMContentLoaded", () => {
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    statusEl.textContent = "Loading Python environment...";
+  cacheDom();
+  if (dom.status) {
+    dom.status.textContent = "Loading Python environment...";
   }
 
-  pyodideReadyPromise = initPyodideAndPython();
+  state.pyodideReadyPromise = initPyodideAndPython();
   loadTranslations();
 
   // Attach listeners
-  document
-    .getElementById("file-input")
-    .addEventListener("change", handleFileChange);
-
-  document
-    .getElementById("generate-chart")
-    .addEventListener("click", handleGenerateChart);
-
-  document
-    .getElementById("download-chart")
-    .addEventListener("click", handleDownloadChart);
-
-  document
-    .getElementById("lang-toggle")
-    .addEventListener("click", toggleLanguage);
+  if (dom.fileInput) {
+    dom.fileInput.addEventListener("change", handleFileChange);
+  }
+  if (dom.generateChart) {
+    dom.generateChart.addEventListener("click", handleGenerateChart);
+  }
+  if (dom.downloadChart) {
+    dom.downloadChart.addEventListener("click", handleDownloadChart);
+  }
+  if (dom.langToggle) {
+    dom.langToggle.addEventListener("click", toggleLanguage);
+  }
 });
 
 // --- Pyodide setup ---
@@ -62,9 +85,8 @@ await micropip.install("squarify")
   const code = await resp.text();
   await pyodide.runPythonAsync(code);
 
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    statusEl.textContent = "Python ready.";
+  if (dom.status) {
+    dom.status.textContent = "Python ready.";
   }
 
   return pyodide;
@@ -76,49 +98,47 @@ async function handleFileChange(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    statusEl.textContent = getI18n("status_loading_file", "Loading file...");
-  }
+  setStatus("status_loading_file", "Loading file...");
 
   const text = await file.text();
-  const pyodide = await pyodideReadyPromise;
+  const pyodide = await state.pyodideReadyPromise;
 
   const loadCsvFunc = pyodide.globals.get("load_csv_from_text");
 
-    try {
-        const resultProxy = loadCsvFunc(text);
-        const result = resultProxy.toJs({ create_proxies: false });
-        resultProxy.destroy();
+  try {
+    const resultProxy = loadCsvFunc(text);
+    const result = resultProxy.toJs({ create_proxies: false });
+    resultProxy.destroy();
 
-        const columns = result.columns || [];
-        const previewRows = result.preview || [];
-        const totalRows =
-            typeof result.total_rows === "number"
-            ? result.total_rows
-            : previewRows.length;
-        const previewIsFull = !!result.preview_is_full;
+    const columns = result.columns || [];
+    const previewRows = result.preview || [];
+    const totalRows =
+      typeof result.total_rows === "number"
+        ? result.total_rows
+        : previewRows.length;
+    const previewIsFull = !!result.preview_is_full;
 
-        populatePreviewTable(previewRows, previewIsFull, totalRows);
-        populateColumnSelectors(columns);
+    populatePreviewTable(previewRows, previewIsFull, totalRows);
+    populateColumnSelectors(columns);
 
-        currentCsvLoaded = true;
-        document.getElementById("generate-chart").disabled = false;
-
-        if (statusEl) {
-            statusEl.textContent = getI18n("status_ready", "Ready.");
-        }
-    } catch (err) {
-        console.error(err);
-        if (statusEl) {
-        statusEl.textContent =
-            getI18n("status_error", "Error") + ": " + (err.message || err);
-        }
+    state.currentCsvLoaded = true;
+    if (dom.generateChart) {
+      dom.generateChart.disabled = false;
     }
+
+    setStatus("status_ready", "Ready.");
+  } catch (err) {
+    console.error(err);
+    if (dom.status) {
+      dom.status.textContent =
+        getI18n("status_error", "Error") + ": " + (err.message || err);
+    }
+  }
 }
 
 function populatePreviewTable(rows, previewIsFull = false, totalRows = null) {
-  const container = document.getElementById("preview");
+  const container = dom.preview;
+  if (!container) return;
   container.innerHTML = "";
 
   if (!rows || rows.length === 0) {
@@ -196,9 +216,10 @@ function populatePreviewTable(rows, previewIsFull = false, totalRows = null) {
 
 
 function populateColumnSelectors(columns) {
-  const labelSelect = document.getElementById("label-column");
-  const valueSelect = document.getElementById("value-column");
-  const colorSelect = document.getElementById("color-column");
+  const labelSelect = dom.labelColumn;
+  const valueSelect = dom.valueColumn;
+  const colorSelect = dom.colorColumn;
+  if (!labelSelect || !valueSelect || !colorSelect) return;
 
   labelSelect.innerHTML = "";
   valueSelect.innerHTML = "";
@@ -244,12 +265,12 @@ function populateColumnSelectors(columns) {
 
 // --- Chart generation ---
 async function handleGenerateChart() {
-  if (!currentCsvLoaded) return;
+  if (!state.currentCsvLoaded) return;
 
-  const labelSel = document.getElementById("label-column");
-  const valueSel = document.getElementById("value-column");
-  const chartTypeSel = document.getElementById("chart-type");
-  const colorSel = document.getElementById("color-column");
+  const labelSel = dom.labelColumn;
+  const valueSel = dom.valueColumn;
+  const chartTypeSel = dom.chartType;
+  const colorSel = dom.colorColumn;
 
   if (!labelSel || !valueSel || !chartTypeSel) {
     console.error("Required selectors are missing from the page.");
@@ -264,21 +285,15 @@ async function handleGenerateChart() {
   const colorCol = colorSel && colorSel.value ? colorSel.value : null;
 
   // NEW: make color-mode and base-color safe even if HTML is not updated
-  const colorModeEl = document.getElementById("color-mode");
-  const baseColorEl = document.getElementById("base-color");
+  const colorModeEl = dom.colorMode;
+  const baseColorEl = dom.baseColor;
 
-  const colorMode = colorModeEl ? (colorModeEl.value || "direct") : "direct";
-  const baseColor = baseColorEl ? (baseColorEl.value || "#ffd700") : "#ffd700";
+  const colorMode = colorModeEl ? colorModeEl.value || "direct" : "direct";
+  const baseColor = baseColorEl ? baseColorEl.value || "#ffd700" : "#ffd700";
 
-  const statusEl = document.getElementById("status");
-  if (statusEl) {
-    statusEl.textContent = getI18n(
-      "status_generating_chart",
-      "Generating chart..."
-    );
-  }
+  setStatus("status_generating_chart", "Generating chart...");
 
-  const pyodide = await pyodideReadyPromise;
+  const pyodide = await state.pyodideReadyPromise;
   const generateChartFunc = pyodide.globals.get("generate_chart");
 
   try {
@@ -293,21 +308,21 @@ async function handleGenerateChart() {
     );
 
     const dataUrl = "data:image/png;base64," + base64Str;
-    currentChartDataUrl = dataUrl;
+    state.currentChartDataUrl = dataUrl;
 
-    const img = document.getElementById("chart-image");
-    img.src = dataUrl;
-
-    const dlBtn = document.getElementById("download-chart");
-    dlBtn.disabled = false;
-
-    if (statusEl) {
-      statusEl.textContent = getI18n("status_ready", "Ready.");
+    if (dom.chartImage) {
+      dom.chartImage.src = dataUrl;
     }
+
+    if (dom.downloadChart) {
+      dom.downloadChart.disabled = false;
+    }
+
+    setStatus("status_ready", "Ready.");
   } catch (err) {
     console.error(err);
-    if (statusEl) {
-      statusEl.textContent =
+    if (dom.status) {
+      dom.status.textContent =
         getI18n("status_error", "Error") + ": " + (err.message || err);
     }
   }
@@ -315,10 +330,10 @@ async function handleGenerateChart() {
 
 
 function handleDownloadChart() {
-  if (!currentChartDataUrl) return;
+  if (!state.currentChartDataUrl) return;
 
   const link = document.createElement("a");
-  link.href = currentChartDataUrl;
+  link.href = state.currentChartDataUrl;
   link.download = "chart.png";
   document.body.appendChild(link);
   link.click();
@@ -330,7 +345,7 @@ async function loadTranslations() {
   try {
     const resp = await fetch("data/translations.csv");
     const text = await resp.text();
-    translations = parseTranslationsCsv(text);
+    state.translations = parseTranslationsCsv(text);
     applyTranslations();
   } catch (err) {
     console.warn("Could not load translations.csv:", err);
@@ -368,26 +383,25 @@ function applyTranslations() {
   });
 
   // Update status, if we have translations
-  const statusEl = document.getElementById("status");
-  if (statusEl && !statusEl.textContent) {
-    statusEl.textContent = getI18n("status_ready", "Ready.");
+  if (dom.status && !dom.status.textContent) {
+    dom.status.textContent = getI18n("status_ready", "Ready.");
   }
 }
 
 function getI18n(key, fallback = "") {
   if (
-    translations &&
-    translations[key] &&
-    translations[key][currentLang] &&
-    translations[key][currentLang].length > 0
+    state.translations &&
+    state.translations[key] &&
+    state.translations[key][state.currentLang] &&
+    state.translations[key][state.currentLang].length > 0
   ) {
-    return translations[key][currentLang];
+    return state.translations[key][state.currentLang];
   }
   return fallback;
 }
 
 function toggleLanguage() {
-  currentLang = currentLang === "en" ? "zh" : "en";
+  state.currentLang = state.currentLang === "en" ? "zh" : "en";
   applyTranslations();
 }
 
