@@ -69,13 +69,20 @@ import micropip
 await micropip.install("squarify")
 `);
 
-  // --- NEW: load Chinese font into Pyodide FS ---
+// NEW: load Chinese font into Pyodide FS with logging
   try {
     const fontResp = await fetch("fonts/NotoSansSC-Regular.otf");
-    const fontBuffer = await fontResp.arrayBuffer();
-    const fontBytes = new Uint8Array(fontBuffer);
-    // write into virtual filesystem
-    pyodide.FS.writeFile("NotoSansSC-Regular.otf", fontBytes);
+    if (!fontResp.ok) {
+      console.warn("Font fetch failed with status", fontResp.status);
+    } else {
+      const fontBuffer = await fontResp.arrayBuffer();
+      const fontBytes = new Uint8Array(fontBuffer);
+      pyodide.FS.writeFile("NotoSansSC-Regular.otf", fontBytes);
+      console.log(
+        "Chinese font written into Pyodide FS, bytes:",
+        fontBytes.length
+      );
+    }
   } catch (e) {
     console.warn("Failed to load Chinese font:", e);
   }

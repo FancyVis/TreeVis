@@ -5,23 +5,62 @@ import pandas as pd
 import matplotlib
 matplotlib.use("AGG")  # use a non-interactive backend for PNG rendering
 import matplotlib.pyplot as plt
-
+import matplotlib.font_manager as fm
 import squarify  # will be installed via micropip in script.js
 from matplotlib.colors import to_rgb
 
 
 _df = None  # global DataFrame
+CN_FONT_PROP = None
 
-try:
-    font_path = "NotoSansSC-Regular.otf"
-    fm.fontManager.addfont(font_path)
-    cn_prop = fm.FontProperties(fname=font_path)
 
-    # Set as global default
-    plt.rcParams["font.family"] = cn_prop.get_name()
-    plt.rcParams["axes.unicode_minus"] = False  # avoid minus sign issue
-except Exception as e:
-    print("Warning: could not configure Chinese font:", e)
+def _setup_chinese_font():
+    """
+    Try to load a Chinese-capable font from the local file and
+    set it as the default font for Matplotlib.
+    """
+    global CN_FONT_PROP
+
+    font_candidates = [
+        "NotoSansSC-Regular.otf",
+        "NotoSansCJKsc-Regular.otf",
+        "SourceHanSansSC-Regular.otf",
+    ]
+
+    for path in font_candidates:
+        try:
+            fm.fontManager.addfont(path)
+            prop = fm.FontProperties(fname=path)
+            name = prop.get_name()
+            print("Loaded Chinese font:", path, "=>", name)
+
+            # Make this the main sans-serif font
+            plt.rcParams["font.family"] = "sans-serif"
+            plt.rcParams["font.sans-serif"] = [name]
+            plt.rcParams["axes.unicode_minus"] = False
+
+            CN_FONT_PROP = prop
+            return
+        except Exception as e:
+            print("Could not load", path, ":", e)
+
+    print("Warning: no Chinese font loaded; Chinese glyphs may be missing.")
+
+
+# Call at import time
+_setup_chinese_font()
+
+
+# try:
+#     font_path = "NotoSansSC-Regular.otf"
+#     fm.fontManager.addfont(font_path)
+#     cn_prop = fm.FontProperties(fname=font_path)
+
+#     # Set as global default
+#     plt.rcParams["font.family"] = cn_prop.get_name()
+#     plt.rcParams["axes.unicode_minus"] = False  # avoid minus sign issue
+# except Exception as e:
+#     print("Warning: could not configure Chinese font:", e)
 
 
 def load_csv_from_text(text: str):
