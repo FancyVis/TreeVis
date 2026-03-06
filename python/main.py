@@ -31,7 +31,7 @@ def canon_id(v):
         return str(float(v))
     return str(v).strip()
 
-def load_csv_from_text(text: str, preview_n: int = 15):
+def load_csv_from_text(text: str, preview_n: int = 10):
     global DF
     DF = pd.read_csv(io.StringIO(text))
     cols = DF.columns.tolist()

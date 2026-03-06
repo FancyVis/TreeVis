@@ -88,7 +88,10 @@ function renderPreview(rows){
   const tbody = document.createElement("tbody");
   rows.forEach(r => {
     const tr = document.createElement("tr");
-    cols.forEach(c => { const td=document.createElement("td"); td.textContent = r[c]; tr.appendChild(td); });
+    cols.forEach(c => { const td=document.createElement("td"); 
+      const v = (r && typeof r.get === "function") ? r.get(c) : r[c]; 
+      td.textContent = (v === undefined || v === null) ? "" : String(v); 
+      tr.appendChild(td); });
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -131,10 +134,27 @@ async function onFileChange(e){
     const cols = result.columns || [];
     renderPreview(result.preview || []);
 
+
+    // helper: choose a default column by common names
+    function pickCol(cols, candidates){
+      const lower = cols.map(c => String(c).toLowerCase());
+      for (const cand of candidates){
+        const i = lower.indexOf(cand);
+        if (i >= 0) return cols[i];
+      }
+      return "";
+    }
+
     fillSelect(dom.idCol, cols);
     fillSelect(dom.pidCol, cols);
     fillSelect(dom.depthCol, cols, true);
     fillSelect(dom.labelCol, cols, true);
+
+    // defaults
+    dom.idCol.value = pickCol(cols, ["id","node_id","nid"]);
+    dom.pidCol.value = pickCol(cols, ["pid","parent","parent_id","parentid"]);
+    dom.depthCol.value = pickCol(cols, ["depth","level","y"]) || "";   // optional
+    dom.labelCol.value = pickCol(cols, ["label","name","title"]) || ""; // optional
 
     fillSelect(dom.nodeColorCol, cols, true);
     fillSelect(dom.nodeMarkerCol, cols, true);
