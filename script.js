@@ -1,415 +1,353 @@
-// --- Global state ---
-const state = {
-  pyodideReadyPromise: null,
-  translations: {},
-  currentLang: "en",
-  currentCsvLoaded: false,
-  currentChartDataUrl: null,
-};
-
 const dom = {};
+const state = { pyodidePromise: null, lastPngUrl: null, lastSvgUrl: null };
 
-function cacheDom() {
-  dom.status = document.getElementById("status");
-  dom.fileInput = document.getElementById("file-input");
-  dom.generateChart = document.getElementById("generate-chart");
-  dom.downloadChart = document.getElementById("download-chart");
-  dom.langToggle = document.getElementById("lang-toggle");
-  dom.labelColumn = document.getElementById("label-column");
-  dom.valueColumn = document.getElementById("value-column");
-  dom.colorColumn = document.getElementById("color-column");
-  dom.chartType = document.getElementById("chart-type");
-  dom.colorMode = document.getElementById("color-mode");
-  dom.baseColor = document.getElementById("base-color");
-  dom.chartImage = document.getElementById("chart-image");
-  dom.preview = document.getElementById("preview");
+function $(id){ return document.getElementById(id); }
+
+function cacheDom(){
+  dom.fileInput = $("file-input");
+  dom.status = $("status");
+  dom.preview = $("preview");
+
+  dom.idCol = $("id-col");
+  dom.pidCol = $("pid-col");
+  dom.depthCol = $("depth-col");
+  dom.labelCol = $("label-col");
+
+  dom.edgeRoute = $("edge-route");
+  dom.orthMode = $("orth-mode");
+  dom.arcRadMode = $("arc-rad-mode");
+  dom.arcRad = $("arc-rad");
+  dom.orthRow = $("orth-row");
+  dom.arcRow = $("arc-row");
+
+  dom.edgeColor = $("edge-color");
+  dom.edgeLS = $("edge-linestyle");
+  dom.edgeLW = $("edge-linewidth");
+  dom.edgeAlpha = $("edge-alpha");
+
+  dom.nodeSize = $("node-size");
+  dom.nodeMarker = $("node-marker");
+  dom.nodeFace = $("node-facecolor");
+  dom.nodeEdge = $("node-edgecolor");
+  dom.nodeLW = $("node-linewidth");
+  dom.nodeAlpha = $("node-alpha");
+
+  dom.nodeColorCol = $("node-color-col");
+  dom.nodeMarkerCol = $("node-marker-col");
+  dom.cmap = $("cmap");
+  dom.showLegend = $("show-legend");
+  dom.colorMapJson = $("color-map-json");
+  dom.markerMapJson = $("marker-map-json");
+
+  dom.title = $("title");
+  dom.figW = $("fig-w");
+  dom.figH = $("fig-h");
+  dom.figDpi = $("fig-dpi");
+  dom.invertY = $("invert-y");
+  dom.annotate = $("annotate");
+  dom.annotSize = $("annot-size");
+  dom.outFormat = $("out-format");
+
+  dom.generate = $("generate");
+  dom.download = $("download");
+  dom.downloadSvg = $("download-svg");
+  dom.chart = $("chart");
 }
 
-function setStatus(messageKey, fallback) {
-  if (dom.status) {
-    dom.status.textContent = getI18n(messageKey, fallback);
-  }
-}
+function setStatus(msg){ dom.status.textContent = msg; }
 
-// --- Initialization ---
-document.addEventListener("DOMContentLoaded", () => {
-  cacheDom();
-  if (dom.status) {
-    dom.status.textContent = "Loading Python environment...";
+function fillSelect(sel, cols, includeNone=false){
+  sel.innerHTML = "";
+  if(includeNone){
+    const o = document.createElement("option");
+    o.value = "";
+    o.textContent = "(none)";
+    sel.appendChild(o);
   }
-
-  state.pyodideReadyPromise = initPyodideAndPython();
-  loadTranslations();
-
-  // Attach listeners
-  if (dom.fileInput) {
-    dom.fileInput.addEventListener("change", handleFileChange);
-  }
-  if (dom.generateChart) {
-    dom.generateChart.addEventListener("click", handleGenerateChart);
-  }
-  if (dom.downloadChart) {
-    dom.downloadChart.addEventListener("click", handleDownloadChart);
-  }
-  if (dom.langToggle) {
-    dom.langToggle.addEventListener("click", toggleLanguage);
-  }
-});
-
-// --- Pyodide setup ---
-async function initPyodideAndPython() {
-  const pyodide = await loadPyodide({
-    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/",
+  cols.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c;
+    o.textContent = c;
+    sel.appendChild(o);
   });
+}
 
-  await pyodide.loadPackage(["micropip", "pandas", "matplotlib"]);
+function renderPreview(rows){
+  dom.preview.innerHTML = "";
+  if(!rows || rows.length === 0) return;
 
-  await pyodide.runPythonAsync(`
-import micropip
-await micropip.install("squarify")
-`);
+  const cols = Object.keys(rows[0]);
+  const table = document.createElement("table");
 
-// NEW: load Chinese font into Pyodide FS with logging
-  try {
-    const fontResp = await fetch("fonts/NotoSansSC-Regular.otf");
-    if (!fontResp.ok) {
-      console.warn("Font fetch failed with status", fontResp.status);
-    } else {
-      const fontBuffer = await fontResp.arrayBuffer();
-      const fontBytes = new Uint8Array(fontBuffer);
-      pyodide.FS.writeFile("NotoSansSC-Regular.otf", fontBytes);
-      console.log(
-        "Chinese font written into Pyodide FS, bytes:",
-        fontBytes.length
-      );
-    }
-  } catch (e) {
-    console.warn("Failed to load Chinese font:", e);
-  }
+  const thead = document.createElement("thead");
+  const trh = document.createElement("tr");
+  cols.forEach(c => { const th=document.createElement("th"); th.textContent=c; trh.appendChild(th); });
+  thead.appendChild(trh);
+  table.appendChild(thead);
 
-  // Now load your Python code
-  const resp = await fetch("python/main.py");
-  const code = await resp.text();
+  const tbody = document.createElement("tbody");
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    cols.forEach(c => { const td=document.createElement("td"); td.textContent = r[c]; tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  dom.preview.appendChild(table);
+}
+
+function syncRouteUI(){
+  const route = dom.edgeRoute.value;
+  dom.orthRow.style.display = (route === "orthogonal") ? "" : "none";
+  dom.arcRow.style.display = (route === "arc") ? "" : "none";
+  dom.arcRad.style.display = (route === "arc" && dom.arcRadMode.value === "manual") ? "" : "none";
+}
+
+async function initPyodide(){
+  setStatus("Loading Python runtime...");
+  const pyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/" });
+  await pyodide.loadPackage(["pandas", "matplotlib"]);
+  const code = await (await fetch(`python/main.py?v=${Date.now()}`)).text();
   await pyodide.runPythonAsync(code);
-
-  if (dom.status) {
-    dom.status.textContent = "Python ready.";
-  }
-
+  setStatus("Python ready.");
   return pyodide;
 }
 
+async function onFileChange(e){
+  const file = e.target.files[0];
+  if(!file) return;
 
-// --- File upload & preview ---
-async function handleFileChange(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  try{
+    setStatus("Reading CSV...");
+    const text = await file.text();
 
-  setStatus("status_loading_file", "Loading file...");
+    const pyodide = await state.pyodidePromise;
+    const loadFn = pyodide.globals.get("load_csv_from_text");
 
-  const text = await file.text();
-  const pyodide = await state.pyodideReadyPromise;
+    const proxy = loadFn(text);
+    const result = proxy.toJs({ create_proxies: false });
+    proxy.destroy();
 
-  const loadCsvFunc = pyodide.globals.get("load_csv_from_text");
+    const cols = result.columns || [];
+    renderPreview(result.preview || []);
 
-  try {
-    const resultProxy = loadCsvFunc(text);
-    const result = resultProxy.toJs({ create_proxies: false });
-    resultProxy.destroy();
+    fillSelect(dom.idCol, cols);
+    fillSelect(dom.pidCol, cols);
+    fillSelect(dom.depthCol, cols, true);
+    fillSelect(dom.labelCol, cols, true);
 
-    const columns = result.columns || [];
-    const previewRows = result.preview || [];
-    const totalRows =
-      typeof result.total_rows === "number"
-        ? result.total_rows
-        : previewRows.length;
-    const previewIsFull = !!result.preview_is_full;
+    fillSelect(dom.nodeColorCol, cols, true);
+    fillSelect(dom.nodeMarkerCol, cols, true);
 
-    populatePreviewTable(previewRows, previewIsFull, totalRows);
-    populateColumnSelectors(columns);
+    dom.generate.disabled = false;
+    dom.download.disabled = true;
+    dom.downloadSvg.disabled = true;
+    dom.chart.removeAttribute("src");
+    state.last = null;
 
-    state.currentCsvLoaded = true;
-    if (dom.generateChart) {
-      dom.generateChart.disabled = false;
-    }
+    setStatus(`Loaded ${result.total_rows} rows.`);
 
-    setStatus("status_ready", "Ready.");
-  } catch (err) {
+    state.lastPng = null;
+    state.lastSvg = null;
+    dom.download.disabled = true;
+    dom.downloadSvg.disabled = true;
+  } catch(err){
     console.error(err);
-    if (dom.status) {
-      dom.status.textContent =
-        getI18n("status_error", "Error") + ": " + (err.message || err);
-    }
+    setStatus("ERROR loading CSV: " + (err?.message || err));
   }
 }
 
-function populatePreviewTable(rows, previewIsFull = false, totalRows = null) {
-  const container = dom.preview;
-  if (!container) return;
-  container.innerHTML = "";
+async function onGenerate(){
+  try{
+    const pyodide = await state.pyodidePromise;
+    const renderFn = pyodide.globals.get("render_tree_plot");
 
-  if (!rows || rows.length === 0) {
-    container.textContent = getI18n("no_preview_data", "No data to preview.");
-    return;
-  }
+    const route = dom.edgeRoute.value;
+    const arcRad = (route === "arc" && dom.arcRadMode.value === "auto")
+      ? "auto"
+      : parseFloat(dom.arcRad.value);
 
-  // Meta line: how many rows shown
-  const meta = document.createElement("div");
-  meta.className = "preview-meta";
+    const params = {
+      id_col: dom.idCol.value,
+      parent_col: dom.pidCol.value,
+      depth_col: dom.depthCol.value,
+      label_col: dom.labelCol.value,
 
-  if (previewIsFull) {
-    const n = rows.length;
-    meta.textContent =
-      n === 1
-        ? getI18n("preview_meta_all_one", "Showing all 1 row")
-        : getI18n("preview_meta_all", "Showing all {n} rows").replace("{n}", n);
-  } else {
-    const shown = rows.length;
-    const total = totalRows ?? shown;
-    meta.textContent = getI18n(
-      "preview_meta_partial",
-      "Showing first {shown} of {total} rows"
-    )
-      .replace("{shown}", shown)
-      .replace("{total}", total);
-  }
+      edge_route: route,
+      orth_mode: dom.orthMode.value,
+      arc_rad: arcRad,
 
-  container.appendChild(meta);
+      edge_color: dom.edgeColor.value,
+      edge_linestyle: dom.edgeLS.value,
+      edge_linewidth: parseFloat(dom.edgeLW.value),
+      edge_alpha: parseFloat(dom.edgeAlpha.value),
 
-  // Build table
-  const table = document.createElement("table");
-  const thead = document.createElement("thead");
-  const tbody = document.createElement("tbody");
+      node_size: parseFloat(dom.nodeSize.value),
+      node_marker: dom.nodeMarker.value,
+      node_facecolor: dom.nodeFace.value,
+      node_edgecolor: dom.nodeEdge.value,
+      node_linewidth: parseFloat(dom.nodeLW.value),
+      node_alpha: parseFloat(dom.nodeAlpha.value),
 
-  const columns = Object.keys(rows[0]);
+      node_color_col: dom.nodeColorCol.value,
+      node_marker_col: dom.nodeMarkerCol.value,
+      cmap: dom.cmap.value,
+      show_legend: dom.showLegend.checked,
+      color_map_json: dom.colorMapJson.value,
+      marker_map_json: dom.markerMapJson.value,
 
-  const headerRow = document.createElement("tr");
-  columns.forEach((col) => {
-    const th = document.createElement("th");
-    th.textContent = col;
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
+      title: dom.title.value,
+      fig_w: parseFloat(dom.figW.value),
+      fig_h: parseFloat(dom.figH.value),
+      fig_dpi: parseInt(dom.figDpi.value),
+      invert_y: dom.invertY.checked,
+      annotate: dom.annotate.checked,
+      annot_size: parseFloat(dom.annotSize.value),
 
-  rows.forEach((row) => {
-    const tr = document.createElement("tr");
-    columns.forEach((col) => {
-      const td = document.createElement("td");
-      td.textContent = row[col];
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
+      out_format: dom.outFormat.value
+    };
 
-  table.appendChild(thead);
-  table.appendChild(tbody);
-  container.appendChild(table);
+    setStatus("Rendering...");
+    const outProxy = renderFn(JSON.stringify(params));
+    const out = outProxy.toJs({ create_proxies: false });
+    outProxy.destroy();
 
-  // Add scroll hint only if horizontal scroll is actually needed
-  // Use requestAnimationFrame to ensure layout is up to date
-  requestAnimationFrame(() => {
-    if (table.scrollWidth > container.clientWidth) {
-      const hint = document.createElement("div");
-      hint.className = "preview-hint";
-      hint.textContent = getI18n(
-        "scroll_hint",
-        "Scroll to view all columns"
-      );
-      container.appendChild(hint);
-    }
-  });
-}
+    const dataUrl = `data:${out.mime};base64,${out.base64}`;
+    state.lastPngUrl = dataUrl;          // because onGenerate uses out_format png
+    dom.chart.src = dataUrl;
 
+    // dom.download.disabled = false;
+    // $("download-svg").disabled = false;
 
+    // SVG can't go into <img> reliably via data URL in all browsers; PNG is safe.
+    // We'll still allow SVG download; preview will be blank for SVG on some browsers.
+    // dom.chart.src = dataUrl;
 
-function populateColumnSelectors(columns) {
-  const labelSelect = dom.labelColumn;
-  const valueSelect = dom.valueColumn;
-  const colorSelect = dom.colorColumn;
-  if (!labelSelect || !valueSelect || !colorSelect) return;
+    // dom.download.disabled = false;
+    state.lastPng = out;
+    dom.chart.src = `data:${out.mime};base64,${out.base64}`;
 
-  labelSelect.innerHTML = "";
-  valueSelect.innerHTML = "";
+    dom.download.disabled = false;
+    dom.downloadSvg.disabled = false;
+    setStatus("Done.");
 
-  // Keep a default "none" option for color column
-  const defaultColorOption = document.createElement("option");
-  defaultColorOption.value = "";
-  defaultColorOption.textContent = getI18n(
-    "color_none_option",
-    "Default colors"
-  );
-  colorSelect.innerHTML = "";
-  colorSelect.appendChild(defaultColorOption);
-
-  columns.forEach((col) => {
-    const opt1 = document.createElement("option");
-    opt1.value = col;
-    opt1.textContent = col;
-    labelSelect.appendChild(opt1);
-
-    const opt2 = document.createElement("option");
-    opt2.value = col;
-    opt2.textContent = col;
-    valueSelect.appendChild(opt2);
-
-    const opt3 = document.createElement("option");
-    opt3.value = col;
-    opt3.textContent = col;
-    colorSelect.appendChild(opt3);
-  });
-
-  if (columns.length > 0) {
-    labelSelect.value = columns[0];
-  }
-  if (columns.length > 1) {
-    valueSelect.value = columns[1];
-  }
-  // default: no color column (use default matplotlib colors)
-  colorSelect.value = "";
-}
-
-
-
-// --- Chart generation ---
-async function handleGenerateChart() {
-  if (!state.currentCsvLoaded) return;
-
-  const labelSel = dom.labelColumn;
-  const valueSel = dom.valueColumn;
-  const chartTypeSel = dom.chartType;
-  const colorSel = dom.colorColumn;
-
-  if (!labelSel || !valueSel || !chartTypeSel) {
-    console.error("Required selectors are missing from the page.");
-    return;
-  }
-
-  const labelCol = labelSel.value;
-  const valueCol = valueSel.value;
-  const chartType = chartTypeSel.value;
-
-  // color column is optional
-  const colorCol = colorSel && colorSel.value ? colorSel.value : null;
-
-  // NEW: make color-mode and base-color safe even if HTML is not updated
-  const colorModeEl = dom.colorMode;
-  const baseColorEl = dom.baseColor;
-
-  const colorMode = colorModeEl ? colorModeEl.value || "direct" : "direct";
-  const baseColor = baseColorEl ? baseColorEl.value || "#ffd700" : "#ffd700";
-
-  setStatus("status_generating_chart", "Generating chart...");
-
-  const pyodide = await state.pyodideReadyPromise;
-  const generateChartFunc = pyodide.globals.get("generate_chart");
-
-  try {
-    // Python returns a plain string (base64)
-    const base64Str = generateChartFunc(
-      labelCol,
-      valueCol,
-      chartType,
-      colorCol,
-      colorMode,
-      baseColor
-    );
-
-    const dataUrl = "data:image/png;base64," + base64Str;
-    state.currentChartDataUrl = dataUrl;
-
-    if (dom.chartImage) {
-      dom.chartImage.src = dataUrl;
-    }
-
-    if (dom.downloadChart) {
-      dom.downloadChart.disabled = false;
-    }
-
-    setStatus("status_ready", "Ready.");
-  } catch (err) {
+  } catch(err){
     console.error(err);
-    if (dom.status) {
-      dom.status.textContent =
-        getI18n("status_error", "Error") + ": " + (err.message || err);
-    }
+    setStatus("ERROR rendering: " + (err?.message || err));
   }
 }
 
-
-function handleDownloadChart() {
-  if (!state.currentChartDataUrl) return;
-
-  const link = document.createElement("a");
-  link.href = state.currentChartDataUrl;
-  link.download = "chart.png";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+// function onDownload(){
+//   if(!state.last) return;
+//   const a = document.createElement("a");
+//   a.href = state.last.dataUrl;
+//   a.download = `treevis.${state.last.ext}`;
+//   document.body.appendChild(a);
+//   a.click();
+//   a.remove();
+// }
+function onDownload(){
+  if(!state.lastPng) return;
+  downloadOut(state.lastPng, "treevis.png");
 }
 
-// --- i18n: load translations.csv and apply ---
-async function loadTranslations() {
-  try {
-    const resp = await fetch("data/translations.csv");
-    const text = await resp.text();
-    state.translations = parseTranslationsCsv(text);
-    applyTranslations();
-  } catch (err) {
-    console.warn("Could not load translations.csv:", err);
+async function onDownloadSvg(){
+  try{
+    const pyodide = await state.pyodidePromise;
+    const renderFn = pyodide.globals.get("render_tree_plot");
+
+    // build the SAME params as onGenerate, but out_format="svg"
+    const route = dom.edgeRoute.value;
+    const arcRad = (route === "arc" && dom.arcRadMode.value === "auto")
+      ? "auto"
+      : parseFloat(dom.arcRad.value);
+
+    const params = {
+      id_col: dom.idCol.value,
+      parent_col: dom.pidCol.value,
+      depth_col: dom.depthCol.value,
+      label_col: dom.labelCol.value,
+
+      edge_route: route,
+      orth_mode: dom.orthMode.value,
+      arc_rad: arcRad,
+
+      edge_color: dom.edgeColor.value,
+      edge_linestyle: dom.edgeLS.value,
+      edge_linewidth: parseFloat(dom.edgeLW.value),
+      edge_alpha: parseFloat(dom.edgeAlpha.value),
+
+      node_size: parseFloat(dom.nodeSize.value),
+      node_marker: dom.nodeMarker.value,
+      node_facecolor: dom.nodeFace.value,
+      node_edgecolor: dom.nodeEdge.value,
+      node_linewidth: parseFloat(dom.nodeLW.value),
+      node_alpha: parseFloat(dom.nodeAlpha.value),
+
+      node_color_col: dom.nodeColorCol.value,
+      node_marker_col: dom.nodeMarkerCol.value,
+      cmap: dom.cmap.value,
+      show_legend: dom.showLegend.checked,
+      color_map_json: dom.colorMapJson.value,
+      marker_map_json: dom.markerMapJson.value,
+
+      title: dom.title.value,
+      fig_w: parseFloat(dom.figW.value),
+      fig_h: parseFloat(dom.figH.value),
+      fig_dpi: parseInt(dom.figDpi.value),
+      invert_y: dom.invertY.checked,
+      annotate: dom.annotate.checked,
+      annot_size: parseFloat(dom.annotSize.value),
+
+      out_format: "svg"
+    };
+
+    setStatus("Rendering SVG...");
+    const outProxy = renderFn(JSON.stringify(params));
+    const out = outProxy.toJs({ create_proxies: false });
+    outProxy.destroy();
+
+    state.lastSvg = out;
+    downloadOut(out, "treevis.svg");
+    setStatus("SVG downloaded.");
+  } catch(err){
+    console.error(err);
+    setStatus("ERROR SVG: " + (err?.message || err));
   }
 }
 
-function parseTranslationsCsv(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return {};
+function downloadOut(out, filename){
+  if(!out) return;
 
-  const header = lines[0].split(",");
-  const langCols = header.slice(1); // e.g., ["en", "zh"]
+  const bytes = atob(out.base64);
+  const arr = new Uint8Array(bytes.length);
+  for(let i=0; i<bytes.length; i++) arr[i] = bytes.charCodeAt(i);
 
-  const dict = {};
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    const parts = line.split(",");
-    const key = parts[0];
-    dict[key] = {};
-    langCols.forEach((lang, idx) => {
-      dict[key][lang] = parts[idx + 1] || "";
-    });
-  }
-  return dict;
+  const blob = new Blob([arr], { type: out.mime });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
 }
 
-function applyTranslations() {
-  document.querySelectorAll("[data-i18n-key]").forEach((el) => {
-    const key = el.getAttribute("data-i18n-key");
-    const text = getI18n(key, el.textContent);
-    if (text != null) {
-      el.textContent = text;
-    }
-  });
+document.addEventListener("DOMContentLoaded", () => {
+  cacheDom();
+  dom.generate.disabled = true;
+  syncRouteUI();
 
-  // Update status, if we have translations
-  if (dom.status && !dom.status.textContent) {
-    dom.status.textContent = getI18n("status_ready", "Ready.");
-  }
-}
+  state.pyodidePromise = initPyodide();
 
-function getI18n(key, fallback = "") {
-  if (
-    state.translations &&
-    state.translations[key] &&
-    state.translations[key][state.currentLang] &&
-    state.translations[key][state.currentLang].length > 0
-  ) {
-    return state.translations[key][state.currentLang];
-  }
-  return fallback;
-}
+  dom.fileInput.addEventListener("change", onFileChange);
+  dom.generate.addEventListener("click", onGenerate);
+  dom.download.addEventListener("click", onDownload);
+  dom.downloadSvg.addEventListener("click", onDownloadSvg);
 
-function toggleLanguage() {
-  state.currentLang = state.currentLang === "en" ? "zh" : "en";
-  applyTranslations();
-}
-
-// --- end of script.js ---
+  dom.edgeRoute.addEventListener("change", syncRouteUI);
+  dom.arcRadMode.addEventListener("change", syncRouteUI);
+});

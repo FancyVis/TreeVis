@@ -1,124 +1,447 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Tree Data Visualizer</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <title>TreeVis</title>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <style>
+    :root{
+      /* light green theme (centered on #cdefcd) */
+      --bg: #f3fbf3;
+      --card: rgba(255,255,255,0.78);
+      --card2: rgba(255,255,255,0.62);
+      --border: rgba(16, 73, 45, 0.14);
+      --border2: rgba(16, 73, 45, 0.20);
+      --text: rgba(12, 35, 24, 0.92);
+      --muted: rgba(12, 35, 24, 0.68);
+      --muted2: rgba(12, 35, 24, 0.52);
 
-  <!-- Pyodide: replace version with the one you want from the official docs if needed -->
-  <script
-    src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"
-  ></script>
+      --accent: #cdefcd;
 
-  <script src="script.js" defer></script>
+      --shadow: 0 10px 30px rgba(6, 18, 12, 0.10);
+      --radius: 14px;
+      --radius2: 12px;
+      --pad: 14px;
+      --gap: 10px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    *{ box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 15% -10%, rgba(205,239,205,0.55), transparent 60%),
+        radial-gradient(900px 600px at 85% 10%, rgba(168,230,200,0.38), transparent 55%),
+        radial-gradient(800px 500px at 50% 120%, rgba(205,239,205,0.42), transparent 60%),
+        linear-gradient(180deg, #f9fdf9, var(--bg));
+      min-height: 100vh;
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-attachment: fixed;
+    }
+
+    .container{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    h1{
+      margin: 8px 0 14px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      display:flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1::after{
+      content: "local, static, Pyodide";
+      font-size: 12px;
+      color: var(--muted2);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.65);
+    }
+
+    /* icon placeholder next to title */
+    .brand-icon{
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(205,239,205,0.95), transparent 55%),
+        rgba(255,255,255,0.65);
+      box-shadow: 0 8px 18px rgba(6,18,12,0.10);
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .brand-icon img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    section{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin: 12px 0;
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    h2{
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: 0.01em;
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+
+    h3{
+      margin: 14px 0 8px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    #status{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      padding: 8px 10px;
+      border: 1px dashed rgba(16, 73, 45, 0.22);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.60);
+    }
+
+    .row{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 12px;
+      align-items: center;
+      margin: 6px 0;
+    }
+
+    label{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 8px 10px;
+      border: 1px solid rgba(16, 73, 45, 0.14);
+      border-radius: var(--radius2);
+      background: rgba(255,255,255,0.60);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    input[type="file"]{
+      color: var(--muted);
+      font-size: 13px;
+      padding: 8px 10px;
+      border: 1px solid rgba(16, 73, 45, 0.16);
+      border-radius: var(--radius2);
+      background: rgba(255,255,255,0.65);
+    }
+
+    input[type="text"], input[type="number"], select, textarea{
+      margin-left: 0;
+      color: var(--text);
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(16, 73, 45, 0.22);
+      border-radius: 10px;
+      padding: 7px 9px;
+      font-size: 13px;
+      outline: none;
+      min-height: 34px;
+    }
+
+    input[type="text"], textarea{ font-family: var(--mono); }
+    input[type="number"]{ width: 84px; }
+    select{ min-width: 140px; }
+
+    textarea{
+      resize: vertical;
+      min-height: 84px;
+    }
+
+    input[type="checkbox"]{
+      width: 16px;
+      height: 16px;
+      accent-color: #3aa86b;
+    }
+
+    hr{
+      border: none;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(16, 73, 45, 0.18), transparent);
+      margin: 12px 0;
+    }
+
+    details{
+      border: 1px solid rgba(16, 73, 45, 0.14);
+      border-radius: var(--radius2);
+      padding: 10px 10px;
+      background: rgba(255,255,255,0.55);
+    }
+    summary{
+      cursor: pointer;
+      color: var(--muted);
+      font-weight: 700;
+      list-style: none;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    summary::before{
+      content: "▸";
+      display:inline-block;
+      margin-right: 8px;
+      color: var(--muted2);
+      transform: translateY(-1px);
+    }
+    details[open] summary::before{ content: "▾"; }
+
+    button{
+      border: 1px solid rgba(16, 73, 45, 0.22);
+      background: rgba(255,255,255,0.70);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+    button:hover{
+      background: rgba(255,255,255,0.92);
+      border-color: rgba(16, 73, 45, 0.30);
+    }
+    button:active{ transform: translateY(1px); }
+    button:disabled{
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    #generate{
+      background: linear-gradient(180deg, rgba(205,239,205,0.95), rgba(255,255,255,0.78));
+      border-color: rgba(58,168,107,0.45);
+    }
+
+    #preview{
+      margin-top: 10px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(16, 73, 45, 0.14);
+      background: rgba(255,255,255,0.60);
+    }
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: var(--text);
+    }
+    th, td{
+      border-bottom: 1px solid rgba(16, 73, 45, 0.10);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th{
+      position: sticky;
+      top: 0;
+      background: rgba(255,255,255,0.92);
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      border-bottom: 1px solid rgba(16, 73, 45, 0.14);
+    }
+    tr:hover td{
+      background: rgba(205,239,205,0.20);
+    }
+
+    #chart{
+      max-width: 100%;
+      height: auto;
+      border: 1px solid rgba(16, 73, 45, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.70);
+    }
+
+    details .row label{
+      width: 48%;
+      white-space: normal;
+      align-items: flex-start;
+    }
+    details .row label textarea{
+      width: 100%;
+    }
+
+    @media (max-width: 680px){
+      select{ min-width: 120px; }
+      input[type="number"]{ width: 76px; }
+      details .row label{ width: 100% !important; }
+      h1{ font-size: 24px; }
+      .brand-icon{ width: 36px; height: 36px; border-radius: 4px; }
+    }
+  </style>
 </head>
+
 <body>
-  <header class="top-bar">
-    <h1 data-i18n-key="app_title">Tree Data Visualizer</h1>
-    <button id="lang-toggle" class="lang-toggle" data-i18n-key="lang_toggle">
-      中文 / EN
-    </button>
-  </header>
+  <div class="container">
+    <h1><span class="brand-icon"><img src="assets/icon.png" alt=""></span>TreeVis</h1>
 
-  <main class="container">
-    <section class="panel">
-      <h2 data-i18n-key="data_section_title">1. Upload & Preview Data</h2>
+    <section>
+      <h2>Upload CSV</h2>
+      <input type="file" id="file-input" accept=".csv" />
+      <div id="status"></div>
+      <div id="preview"></div>
+    </section>
 
-      <div class="form-row">
-        <label for="file-input">
-          <span data-i18n-key="upload_label">Upload CSV file</span>
+    <section>
+      <h2>Columns</h2>
+      <div class="row">
+        <label>ID <select id="id-col"></select></label>
+        <label>Parent <select id="pid-col"></select></label>
+        <label>Depth (optional) <select id="depth-col"></select></label>
+        <label>Label (optional) <select id="label-col"></select></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Plot</h2>
+
+      <h3>Edges</h3>
+      <div class="row">
+        <label>route
+          <select id="edge-route">
+            <option value="straight">straight</option>
+            <option value="orthogonal">orthogonal</option>
+            <option value="arc">arc</option>
+          </select>
         </label>
-        <input type="file" id="file-input" accept=".csv" />
+
+        <span id="orth-row">
+          <label>orth_mode
+            <select id="orth-mode">
+              <option value="hv">hv</option>
+              <option value="vh">vh</option>
+            </select>
+          </label>
+        </span>
+
+        <span id="arc-row">
+          <label>arc_rad
+            <select id="arc-rad-mode">
+              <option value="auto">auto</option>
+              <option value="manual">manual</option>
+            </select>
+          </label>
+          <input id="arc-rad" type="number" step="0.05" value="0.25" />
+        </span>
       </div>
 
-      <div id="status" class="status"></div>
-
-      <h3 data-i18n-key="preview_title">Preview</h3>
-      <div id="preview" class="preview-table"></div>
-    </section>
-
-    <section class="panel">
-        <h2 data-i18n-key="chart_section_title">2. Configure Chart</h2>
-
-        <div class="form-row">
-            <label for="label-column">
-            <span data-i18n-key="choose_label_column">Label column</span>
-            </label>
-            <select id="label-column"></select>
-        </div>
-
-        <div class="form-row">
-            <label for="value-column">
-            <span data-i18n-key="choose_value_column">Value column</span>
-            </label>
-            <select id="value-column"></select>
-        </div>
-
-        <!-- Color column selector -->
-        <div class="form-row">
-            <label for="color-column">
-            <span data-i18n-key="choose_color_column">Color column (optional)</span>
-            </label>
-            <select id="color-column">
-            <option value="" data-i18n-key="color_none_option">
-                Default colors
-            </option>
-            </select>
-        </div>
-
-        <div class="form-row">
-            <label for="color-mode">
-                <span data-i18n-key="color_mapping_mode">Color mapping</span>
-            </label>
-            <select id="color-mode">
-                <option value="direct" data-i18n-key="color_mode_direct">
-                Use values as colors
-                </option>
-                <option value="numeric" data-i18n-key="color_mode_numeric">
-                Numeric → gradient
-                </option>
-                <option value="binary" data-i18n-key="color_mode_binary">
-                Boolean / binary
-                </option>
-            </select>
-        </div>
-
-        <div class="form-row">
-            <label for="base-color">
-                <span data-i18n-key="base_color_label">Base color</span>
-            </label>
-            <input type="color" id="base-color" value="#ffd700" />
-        </div>
-
-        <div class="form-row">
-            <label for="chart-type">
-            <span data-i18n-key="chart_type">Chart type</span>
-            </label>
-            <select id="chart-type">
-            <option value="bar" data-i18n-key="chart_type_bar">Bar chart</option>
-            <option value="treemap" data-i18n-key="chart_type_treemap">
-                Treemap
-            </option>
-            </select>
-        </div>
-
-        <button id="generate-chart" class="primary-button" disabled
-            data-i18n-key="generate_button">
-            Generate chart
-        </button>
-    </section>
-
-
-    <section class="panel">
-      <h2 data-i18n-key="result_section_title">3. Result</h2>
-      <div id="chart-container" class="chart-container">
-        <img id="chart-image" alt="Chart will appear here" />
+      <div class="row">
+        <label>color <input id="edge-color" type="text" value="0.6" /></label>
+        <label>linestyle
+          <select id="edge-linestyle">
+            <option value="-">solid</option>
+            <option value="--">dashed</option>
+            <option value=":">dotted</option>
+            <option value="-.">dashdot</option>
+          </select>
+        </label>
+        <label>linewidth <input id="edge-linewidth" type="number" step="0.1" value="1.0" /></label>
+        <label>alpha <input id="edge-alpha" type="number" step="0.05" min="0" max="1" value="1.0" /></label>
       </div>
-      <button id="download-chart" class="secondary-button" disabled
-        data-i18n-key="download_button">
-        Download chart
-      </button>
+
+      <h3>Nodes</h3>
+      <div class="row">
+        <label>size <input id="node-size" type="number" value="30" /></label>
+        <label>marker <input id="node-marker" type="text" value="o" /></label>
+        <label>facecolor <input id="node-facecolor" type="text" value="C0" /></label>
+        <label>edgecolor <input id="node-edgecolor" type="text" value="k" /></label>
+        <label>linewidth <input id="node-linewidth" type="number" step="0.1" value="0.8" /></label>
+        <label>alpha <input id="node-alpha" type="number" step="0.05" min="0" max="1" value="1.0" /></label>
+      </div>
+
+      <div class="row">
+        <label>node_color_col <select id="node-color-col"></select></label>
+        <label>node_marker_col <select id="node-marker-col"></select></label>
+        <label>cmap
+          <select id="cmap">
+            <option value="viridis">viridis</option>
+            <option value="plasma">plasma</option>
+            <option value="magma">magma</option>
+            <option value="cividis">cividis</option>
+            <option value="coolwarm">coolwarm</option>
+            <option value="Spectral">Spectral</option>
+          </select>
+        </label>
+        <label><input id="show-legend" type="checkbox" /> legend</label>
+      </div>
+
+      <details>
+        <summary>Advanced: color_map / marker_map JSON</summary>
+        <div class="row" style="align-items:flex-start;">
+          <label style="display:block; width: 48%;">color_map_json
+            <textarea id="color-map-json" rows="3" style="width:100%;" placeholder='{"A":"#1f77b4","B":"#ff7f0e"}'></textarea>
+          </label>
+          <label style="display:block; width: 48%;">marker_map_json
+            <textarea id="marker-map-json" rows="3" style="width:100%;" placeholder='{"A":"o","B":"^"}'></textarea>
+          </label>
+        </div>
+      </details>
+
+      <h3>Figure</h3>
+      <div class="row">
+        <label>title <input id="title" type="text" value="Tree plot" /></label>
+        <label>fig_w <input id="fig-w" type="number" step="0.5" value="10" /></label>
+        <label>fig_h <input id="fig-h" type="number" step="0.5" value="6" /></label>
+        <label>dpi <input id="fig-dpi" type="number" step="10" value="150" /></label>
+        <label><input id="invert-y" type="checkbox" checked /> invert_y</label>
+        <label><input id="annotate" type="checkbox" /> annotate</label>
+        <label>annot_size <input id="annot-size" type="number" value="8" /></label>
+        <label>format
+          <select id="out-format">
+            <option value="png">png</option>
+            <option value="svg">svg</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="generate" disabled>Generate</button>
+        <button id="download" disabled>Download PNG</button>
+        <button id="download-svg" disabled>Download SVG</button>
+      </div>
     </section>
-  </main>
+
+    <section>
+      <h2>Output</h2>
+      <img id="chart" alt="Tree will appear here" />
+    </section>
+
+    <script src="script.js"></script>
+  </div>
 </body>
 </html>
