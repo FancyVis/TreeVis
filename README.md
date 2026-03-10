@@ -40,11 +40,10 @@ You can include an example input file in the repo, for example at:
 Preview:
 
 ```csv
-nid,pid,depth,label
-0,,0,Root
-1,0,1,Group A
-2,0,1,Group B
-3,1,2,A1
-4,1,2,A2
-5,2,2,B1
-6,2,2,B2
+nid,pid,depth,size,label
+0,,0,1,A
+1,0,1,2,B
+2,0,1,3,C
+3,1,2.1,3,D
+4,1,2,5,E
+5,2,2,5,F
