@@ -1,0 +1,14 @@
+Note: All parameters not listed here are set to default.
+
+Customized parameters:
+
+size: 500
+marker: s
+node_color_col: size
+cmap: coolwarm
+
+legend: True
+fig_w: 6
+fig_h: 6
+annotate: True
+annot_size: 10
