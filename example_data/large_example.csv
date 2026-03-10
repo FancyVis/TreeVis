@@ -1,0 +1,82 @@
+nid,pid,depth,size,label
+R0,,0,10,Root 0
+R0_A,R0,1,6,R0 • A
+R0_B,R0,1,4,R0 • B
+R0_C,R0,1,7,R0 • C
+R0_D,R0,1,3,R0 • D
+R0_E,R0,1,8,R0 • E
+R0_F,R0,1,2,R0 • F
+R0_G,R0,1,5,R0 • G
+R0_H,R0,1,9,R0 • H
+R0_I,R0,1,1,R0 • I
+R0_J,R0,1,4,R0 • J
+R0_K,R0,1,6,R0 • K
+R0_L,R0,1,3,R0 • L
+R0_M,R0,1,5,R0 • M
+R0_A_0,R0_A,2,3,R0 • A • 0
+R0_A_1,R0_A,2,5,R0 • A • 1
+R0_A_2,R0_A,2,2,R0 • A • 2
+R0_A_3,R0_A,2,6,R0 • A • 3
+R0_A_4,R0_A,2,4,R0 • A • 4
+R0_A_2_x,R0_A_2,3.1,7,R0 • A • 2 • x
+R0_A_2_y,R0_A_2,3,2,R0 • A • 2 • y
+R0_A_2_y_i,R0_A_2_y,4,5,R0 • A • 2 • y • i
+R0_A_2_y_ii,R0_A_2_y,4.6,1,R0 • A • 2 • y • ii
+R0_A_2_y_ii_a,R0_A_2_y_ii,5.2,9,R0 • A • 2 • y • ii • a
+R0_B_0,R0_B,2,2,R0 • B • 0
+R0_B_1,R0_B,2,3,R0 • B • 1
+R0_B_2,R0_B,2,1,R0 • B • 2
+R0_B_1_a,R0_B_1,3,4,R0 • B • 1 • a
+R0_B_1_b,R0_B_1,3.7,6,R0 • B • 1 • b
+R0_B_1_b_i,R0_B_1_b,4.2,3,R0 • B • 1 • b • i
+R0_B_1_b_ii,R0_B_1_b,4,8,R0 • B • 1 • b • ii
+R0_C_chain1,R0_C,2,2,R0 • C • chain 1
+R0_C_chain2,R0_C_chain1,3,3,R0 • C • chain 2
+R0_C_chain3,R0_C_chain2,4.1,4,R0 • C • chain 3
+R0_C_chain4,R0_C_chain3,5,5,R0 • C • chain 4
+R0_C_chain5,R0_C_chain4,6.3,6,R0 • C • chain 5
+R0_C_chain6,R0_C_chain5,7,7,R0 • C • chain 6
+R0_C_chain7,R0_C_chain6,8.2,8,R0 • C • chain 7
+R0_C_chain8,R0_C_chain7,9,9,R0 • C • chain 8
+R0_C_chain9,R0_C_chain8,10,10,R0 • C • chain 9
+R0_D_0,R0_D,2,3,R0 • D • 0
+R0_D_1,R0_D,2.4,2,R0 • D • 1
+R0_D_2,R0_D,2,4,R0 • D • 2
+R0_D_3,R0_D,2,1,R0 • D • 3
+R0_D_4,R0_D,2.1,5,R0 • D • 4
+R0_D_0_a,R0_D_0,3,6,R0 • D • 0 • a
+R0_D_0_b,R0_D_0,3,2,R0 • D • 0 • b
+R0_D_0_c,R0_D_0,3.3,8,R0 • D • 0 • c
+R0_D_0_c_i,R0_D_0_c,4,5,R0 • D • 0 • c • i
+R0_D_0_c_ii,R0_D_0_c,4.8,3,R0 • D • 0 • c • ii
+R0_D_0_c_iii,R0_D_0_c,4.2,7,R0 • D • 0 • c • iii
+R0_D_0_c_iii_x,R0_D_0_c_iii,5.7,9,R0 • D • 0 • c • iii • x
+R0_E_0,R0_E,2,2,R0 • E • 0
+R0_E_1,R0_E,2,3,R0 • E • 1
+R0_E_2,R0_E,2,4,R0 • E • 2
+R0_E_3,R0_E,2.2,5,R0 • E • 3
+R0_E_4,R0_E,2,6,R0 • E • 4
+R0_E_5,R0_E,2.5,7,R0 • E • 5
+R0_E_6,R0_E,2,8,R0 • E • 6
+R0_E_7,R0_E,2,9,R0 • E • 7
+R0_E_3_a,R0_E_3,3,4,R0 • E • 3 • a
+R0_E_3_b,R0_E_3,3.9,6,R0 • E • 3 • b
+R0_E_3_c,R0_E_3,3.4,2,R0 • E • 3 • c
+R0_E_3_b_i,R0_E_3_b,4.2,7,R0 • E • 3 • b • i
+R0_E_3_b_ii,R0_E_3_b,4,3,R0 • E • 3 • b • ii
+R1,,0,6,Root 1
+R1_a,R1,1,2,R1 • a
+R1_b,R1,1,5,R1 • b
+R1_c,R1,1.2,3,R1 • c
+R1_d,R1,1,7,R1 • d
+R1_a_0,R1_a,2,4,R1 • a • 0
+R1_a_1,R1_a,2.6,2,R1 • a • 1
+R1_a_2,R1_a,2,6,R1 • a • 2
+R1_a_2_i,R1_a_2,3.5,7,R1 • a • 2 • i
+R1_a_2_ii,R1_a_2,3,1,R1 • a • 2 • ii
+R2,,0,4,Root 2
+R2_only,R2,1,5,R2 • only
+R2_only_deep1,R2_only,2,6,R2 • deep 1
+R2_only_deep2,R2_only_deep1,3.2,7,R2 • deep 2
+R2_only_deep3,R2_only_deep2,4,8,R2 • deep 3
+R2_only_deep4,R2_only_deep3,5.6,9,R2 • deep 4
